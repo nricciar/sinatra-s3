@@ -1,0 +1,17 @@
+:development:
+  :storage: storage
+  :db:
+    :database: db/development.db
+    :adapter: sqlite3
+
+:test:
+  :storage: test/storage
+  :db:
+    :database: db/test.db
+    :adapter: sqlite3
+
+:production:
+  :storage: storage
+  :db:
+    :database: db/production.db
+    :adapter: sqlite3

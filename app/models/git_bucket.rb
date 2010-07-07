@@ -1,0 +1,3 @@
+class GitBucket < Bucket
+
+end
