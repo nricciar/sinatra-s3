@@ -1,0 +1,16 @@
+An implementation of the S3 API in Sinatra.  Most of the code was originaly taken from
+ParkPlace, another S3 clone written by _why.
+
+REQUIREMENTS
+
+  gem install sinatra builder async_sinatra aws-s3
+
+INSTALL
+-------------------------------------------------------
+
+  1) cp s3.yml.example s3.yml
+  2) edit s3.yml to suit your needs
+  3) rake db:migrate
+  4) rackup config.ru -s thin -p 6060
+  5) go to http://localhost:6060/control/ and login with the username admin and the
+     password pass@word1
