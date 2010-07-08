@@ -15,6 +15,10 @@ class Slot < Bit
     end
   end
 
+  def remove_from_filesystem
+    FileUtils.rm_f fullpath
+  end
+
   protected
   def self.condition_string(marker,prefix)
     conditions = []

@@ -151,6 +151,7 @@ module S3
       if Slot.count(:conditions => ['deleted = 0 AND parent_id = ?', @bucket.id]) > 0
 	# FIXME: error message, bucket is not empty
       else
+	@bucket.remove_from_filesystem()
 	@bucket.destroy()
       end
       redirect "/control/buckets"
@@ -168,6 +169,7 @@ module S3
 	@slot.git_update
       end
 
+      @slot.remove_from_filesystem()
       @slot.destroy()
       redirect "/control/buckets/#{params[:captures].first}"
     end

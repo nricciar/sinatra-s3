@@ -3,7 +3,7 @@ ParkPlace, another S3 clone written by _why.
 
 REQUIREMENTS
 
-  gem install sinatra builder async_sinatra aws-s3
+  gem install sinatra builder aws-s3
 
 INSTALL
 -------------------------------------------------------

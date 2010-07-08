@@ -5,7 +5,6 @@ require 'sinatra/base'
 require 'openssl'
 require 'digest/sha1'
 require 'md5'
-require 'sinatra/async'
 require 'builder'
 
 begin
@@ -39,6 +38,9 @@ require "#{File.dirname(__FILE__)}/app/models/nested_set"
 ActiveRecord::Base.send :include, ActiveRecord::Acts::NestedSet
 
 %w(bit bucket git_bucket slot user file_info).each {|r| require "#{File.dirname(__FILE__)}/app/models/#{r}" }
-%w(helpers errors admin base).each {|r| require "#{File.dirname(__FILE__)}/app/#{r}"}
+%w(ext helpers errors admin base).each {|r| require "#{File.dirname(__FILE__)}/app/#{r}"}
 
-ActiveRecord::Base.logger = Logger.new(STDERR)
+#ActiveRecord::Base.logger = Logger.new(STDERR)
+#log = File.new("sinatra.log", "a")
+#STDOUT.reopen(log)
+#STDERR.reopen(log)

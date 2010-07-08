@@ -11,8 +11,6 @@ module S3
     disable :raise_errors, :show_exceptions
     set :environment, :production
 
-    register Sinatra::Async
-
     helpers do
       include S3::Helpers
     end
@@ -47,7 +45,7 @@ module S3
       end
     end
 
-    aget '/' do
+    get '/' do
       only_authorized
       buckets = Bucket.user_buckets(@user.id)
 
@@ -71,7 +69,7 @@ module S3
 
 
     # get bucket
-    aget %r{^/([^\/]+)/?$} do
+    get %r{^/([^\/]+)/?$} do
       bucket = Bucket.find_root(params[:captures].first)
       acl_response_for(bucket) and return if params.has_key?('acl')
       versioning_response_for(bucket) and return if params.has_key?('versioning')
@@ -139,7 +137,7 @@ module S3
     end
 
     # create bucket
-    aput %r{^/([^\/]+)/?$} do
+    put %r{^/([^\/]+)/?$} do
       begin
 	only_authorized
 	bucket = Bucket.find_root(params[:captures].first)
@@ -158,19 +156,20 @@ module S3
     end
 
     # delete bucket
-    adelete %r{^/([^\/]+)/?$} do
+    delete %r{^/([^\/]+)/?$} do
       bucket = Bucket.find_root(params[:captures].first)
       only_owner_of bucket
 
       raise BucketNotEmpty if Slot.count(:conditions => ['deleted = 0 AND parent_id = ?', bucket.id]) > 0
 
+      bucket.remove_from_filesystem
       bucket.destroy
       status 204
       body ""
     end
 
     # get slot
-    aget %r{^/(.+?)/(.+)$} do
+    get %r{^/(.+?)/(.+)$} do
       bucket = Bucket.find_root(params[:captures].first)
 
       h = {}
@@ -204,7 +203,7 @@ module S3
       }
 
       if @slot.obj.is_a? FileInfo
-	h.merge!({ 'Content-Disposition' => @slot.obj.disposition, 'Content-Length' => (@revision_file.nil? ? 
+	h.merge!({ 'Content-Disposition' => (@slot.obj.disposition.nil? ? "inline" : @slot.obj.disposition), 'Content-Length' => (@revision_file.nil? ? 
 	  @slot.obj.size : @revision_file.length).to_s, 'Content-Type' => @slot.obj.mime_type })
       end
       h['Content-Type'] ||= 'binary/octet-stream'
@@ -231,7 +230,7 @@ module S3
     end
 
     # create slot
-    aput %r{^/(.+?)/(.+)$} do
+    put %r{^/(.+?)/(.+)$} do
       bucket = Bucket.find_root(params[:captures].first)
       only_can_write bucket
 
@@ -341,7 +340,7 @@ module S3
     end
 
     # delete slot
-    adelete %r{^/(.+?)/(.+)$} do
+    delete %r{^/(.+?)/(.+)$} do
       bucket = Bucket.find_root(params[:captures].first)
       only_can_write bucket
 
@@ -357,6 +356,7 @@ module S3
 	  end
 	end
 
+	@slot.remove_from_filesystem
 	@slot.destroy
 	status 204
 	body ""
