@@ -88,6 +88,17 @@ class Bit < ActiveRecord::Base
     return true if acl_list[:anonymous] && acl_list[:anonymous][:accessnum].to_i >= 5
   end
 
+  def acp_writable_by? user
+    # if owner
+    return true if user && user == owner
+    # if can write or better
+    return true if user && acl_list[user.key] && acl_list[user.key][:accessnum].to_i == 7
+    # if authenticated
+    return true if user && acl_list[:authenticated] && acl_list[:authenticated][:accessnum].to_i == 7
+    # if anonymous
+    return true if acl_list[:anonymous] && acl_list[:anonymous][:accessnum].to_i == 7
+  end
+
   def readable_by? user
     return true if user && acl_list[user.key] && acl_list[user.key][:accessnum].to_i >= 4
     check_access(user, READABLE_BY_AUTH, READABLE)

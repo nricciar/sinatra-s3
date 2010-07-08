@@ -73,6 +73,13 @@ class S3ApiTest < Test::Unit::TestCase
     policy = bucket.acl
     assert !policy.grants.include?(:public_read)
     AWS::S3::Bucket.delete(bucket_name, :force => true)
+
+    AWS::S3::Bucket.create(bucket_name)
+    bucket = AWS::S3::Bucket.find(bucket_name)
+    bucket.acl.grants << AWS::S3::ACL::Grant.grant(:public_read_acp)
+    bucket.acl(bucket.acl)
+    assert bucket.acl.grants.include?(:public_read_acp)
+    AWS::S3::Bucket.delete(bucket_name, :force => true)
   end
 
   protected

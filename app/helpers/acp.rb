@@ -56,27 +56,27 @@ module S3
           xml_request = REXML::Document.new(data).root
           xml_request.each_element('//Grant') do |element|
             new_perm = element.elements['Permission'].text
-            new_access = "#{Models::Bit.acl_text.invert[new_perm]}00".to_i(8)
+            new_access = "#{Bit.acl_text.invert[new_perm]}00".to_i(8)
             grantee = element.elements['Grantee']
 
             case grantee.attributes["type"]
             when "CanonicalUser"
-              user_check = Models::User.find_by_key(grantee.elements["ID"].text)
+              user_check = User.find_by_key(grantee.elements["ID"].text)
               unless user_check.nil? || slot.owner.id == user_check.id
                 update_user_access(slot,user_check,new_access)
               end
             when "Group"
               if grantee.elements['URI'].text =~ /AuthenticatedUsers/
                 slot.access &= ~(slot.access.to_s(8)[1,1].to_i*10)
-                slot.access |= (Models::Bit.acl_text.invert[new_perm]*10).to_s.to_i(8)
+                slot.access |= (Bit.acl_text.invert[new_perm]*10).to_s.to_i(8)
               end
               if grantee.elements['URI'].text =~ /AllUsers/
                 slot.access &= ~slot.access.to_s(8)[2,1].to_i
-                slot.access |= Models::Bit.acl_text.invert[new_perm].to_s.to_i(8)
+                slot.access |= Bit.acl_text.invert[new_perm].to_s.to_i(8)
               end
               slot.save()
             when "AmazonCustomerByEmail"
-              user_check = Models::User.find_by_email(grantee.elements["EmailAddress"].text)
+              user_check = User.find_by_email(grantee.elements["EmailAddress"].text)
               unless user_check.nil? || slot.owner.id == user_check.id
                 update_user_access(slot,user_check,new_access)
               end
