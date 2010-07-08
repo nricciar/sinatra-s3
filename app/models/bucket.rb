@@ -38,7 +38,7 @@ class Bucket < Bit
       self.save()
       self.git_update
     rescue Git::GitExecuteError => error_message
-      puts "[#{Time.now}] GIT: #{error_message}" if ParkPlace::Base.options.verbose
+      puts "[#{Time.now}] GIT: #{error_message}" 
     end
   end
 

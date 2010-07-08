@@ -215,6 +215,25 @@ module S3
         headers h
 	body @revision_file
       elsif @slot.obj.kind_of?(FileInfo) && env['HTTP_RANGE'] =~ /^bytes=(\d+)?-(\d+)?$/ # yay, parse basic ranges
+	range_start = $1
+	range_end = $2
+	raise NotImplemented unless range_start || range_end # Need at least one or the other.
+	file_path = File.join(STORAGE_PATH, @slot.obj.path)
+	file_size = File.size(file_path)
+	f = File.open(file_path)
+	if range_start # "Bytes N through ?" mode
+	  range_end = (file_size - 1) if range_end.nil?
+	  content_length = (range_end.to_i - range_start.to_i + 1)
+	  headers['Content-Range'] = "bytes #{range_start.to_i}-#{range_end.to_i}/#{file_size}"
+	else # "Last N bytes of file" mode.
+	  range_start = file_size - range_end.to_i
+	  content_length = range_end.to_i
+	  headers['Content-Range'] = "bytes #{range_start.to_i}-#{file_size - 1}/#{file_size}"
+	end
+	f.seek(range_start.to_i)
+	status 206
+	headers['Content-Length'] = ([content_length,0].max).to_s
+	body f
       elsif env['HTTP_RANGE']  # ugh, parse ranges
 	raise NotImplemented
       else
@@ -313,7 +332,6 @@ module S3
 	  fileinfo.path = File.join(params[:captures].first, rand(10000).to_s(36) + '_' + File.basename(temp_path))
 	  fileinfo.path.succ! while File.exists?(File.join(STORAGE_PATH, fileinfo.path))
 	  file_path = File.join(STORAGE_PATH,fileinfo.path)
-	  puts file_path
 	  FileUtils.mkdir_p(File.dirname(file_path))
 	  FileUtils.mv(temp_path, file_path)
 	else

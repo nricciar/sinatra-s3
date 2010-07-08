@@ -4,6 +4,7 @@ module S3
   module Helpers
 
     include ACP
+    include Versioning
 
     # Kick out anonymous users.
     def only_authorized; raise S3::AccessDenied unless @user end
