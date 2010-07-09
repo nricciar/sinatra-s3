@@ -20,6 +20,8 @@ module S3
     end
 
     before do
+      ActiveRecord::Base.verify_active_connections!
+
       @meta, @amz = {}, {}
       @env.each do |k,v|
 	k = k.downcase.gsub('_', '-')
@@ -39,6 +41,7 @@ module S3
       @amz.sort.each do |k, v|
 	canonical[-1,0] = "x-amz-#{k}:#{v}"
       end
+
       @user = User.find_by_key key_s
       if (@user and secret_s != hmac_sha1(@user.secret, canonical.map{|v|v.to_s.strip} * "\n")) || (@user and @user.deleted == 1)
 	raise BadAuthentication
@@ -141,11 +144,14 @@ module S3
       begin
 	only_authorized
 	bucket = Bucket.find_root(params[:captures].first)
-
-	#raise BucketAlreadyExists unless bucket.nil?
-
 	only_owner_of bucket
-	bucket.grant(requested_acl(bucket))
+	if params.has_key?('acl')
+	  bucket.grant(requested_acl(bucket))
+	elsif params.has_key?('versioning')
+	  manage_versioning(bucket)
+	else
+	  raise BucketAlreadyExists
+	end
 	headers 'Location' => env['PATH_INFO'], 'Content-Length' => 0.to_s
 	body ""
       rescue NoSuchBucket

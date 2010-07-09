@@ -39,8 +39,3 @@ ActiveRecord::Base.send :include, ActiveRecord::Acts::NestedSet
 
 %w(bit bucket git_bucket slot user file_info).each {|r| require "#{File.dirname(__FILE__)}/app/models/#{r}" }
 %w(ext helpers errors admin base).each {|r| require "#{File.dirname(__FILE__)}/app/#{r}"}
-
-#ActiveRecord::Base.logger = Logger.new(STDERR)
-#log = File.new("sinatra.log", "a")
-#STDOUT.reopen(log)
-#STDERR.reopen(log)

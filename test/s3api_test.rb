@@ -17,6 +17,12 @@ class S3ApiTest < Test::Unit::TestCase
     end
 
     begin
+      bucket = AWS::S3::Bucket.create(bucket_name)
+    rescue => e
+      assert e.instance_of?(AWS::S3::BucketAlreadyExists)
+    end
+
+    begin
       assert AWS::S3::Bucket.delete(bucket_name)
     rescue => e
     end
@@ -79,6 +85,30 @@ class S3ApiTest < Test::Unit::TestCase
     bucket.acl.grants << AWS::S3::ACL::Grant.grant(:public_read_acp)
     bucket.acl(bucket.acl)
     assert bucket.acl.grants.include?(:public_read_acp)
+    AWS::S3::Bucket.delete(bucket_name, :force => true)
+  end
+
+  def test_versioning
+    AWS::S3::Bucket.create(bucket_name, { :access => :public_read })
+    get "/#{bucket_name}/?versioning"
+    assert last_response.ok?
+    assert last_response.body.include?('<Versioning>Suspended</Versioning>')
+
+    @user = User.find_by_login('admin')
+    sts = hmac_sha1(@user.secret, "PUT\n\ntext/plain\n\n/#{bucket_name}/?versioning")
+    aws_header = "AWS " + "#{@user.key}:#{sts}"
+
+    header "Content-Type", "text/plain"
+    header "Authorization", aws_header
+    xml_data = '<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Status>Enabled</Status></VersioningConfiguration>';
+    put "/#{bucket_name}/?versioning", xml_data
+    assert last_response.ok?
+
+    header "Authorization", nil
+
+    get "/#{bucket_name}/?versioning"
+    assert last_response.body.include?('<Versioning>Enabled</Versioning>')
+
     AWS::S3::Bucket.delete(bucket_name, :force => true)
   end
 

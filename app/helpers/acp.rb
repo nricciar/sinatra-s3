@@ -37,19 +37,7 @@ module S3
 
       # Parse any ACL requests which have come in.
       def requested_acl(slot=nil)
-        if slot && params.has_key?('versioning')
-          only_can_write_acp slot
-          env['rack.input'].rewind
-          data = env['rack.input'].read
-          xml_request = REXML::Document.new(data).root
-
-          # check if we are enabling version control
-          # FIXME: does not disable version control
-          if !slot.versioning_enabled? && xml_request.elements['Status'].text == 'Enabled'
-            raise NotImplemented unless defined?(Git)
-            slot.git_init
-          end
-        elsif slot && params.has_key?('acl')
+        if slot && params.has_key?('acl')
           only_can_write_acp slot
           env['rack.input'].rewind
           data = env['rack.input'].read

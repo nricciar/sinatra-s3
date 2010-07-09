@@ -10,6 +10,18 @@ module S3
 	end
       end
 
+      def manage_versioning(bucket)
+	raise NotImplemented unless defined?(Git)
+	only_can_write_acp bucket
+
+	env['rack.input'].rewind
+	data = env['rack.input'].read
+	xml_request = REXML::Document.new(data).root
+
+	bucket.git_init() if !bucket.versioning_enabled? && xml_request.elements['Status'].text == 'Enabled'
+	bucket.git_destroy() if bucket.versioning_enabled? && xml_request.elements['Status'].text == 'Suspended'
+      end
+
     end
   end
 end

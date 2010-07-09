@@ -2,6 +2,7 @@ require 'rubygems'
 require 'test/unit'
 require File.join(File.dirname(__FILE__), '..', 's3')
 require 'aws/s3'
+require 'rack/test'
 
 admin = User.find_by_login('admin')
 
@@ -14,4 +15,11 @@ AWS::S3::Base.establish_connection!(
 
 class Test::Unit::TestCase
   include AWS::S3
+  include Rack::Test::Methods
+  include S3::Helpers
+
+  def app
+    S3::Application
+  end
+
 end
