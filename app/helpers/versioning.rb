@@ -5,7 +5,7 @@ module S3
       def versioning_response_for(bit)
 	xml do |x|
 	  x.VersioningConfiguration :xmlns => "http://s3.amazonaws.com/doc/2006-03-01/" do
-	    x.Versioning bit.versioning_enabled? ? 'Enabled' : 'Suspended'
+	    x.Versioning bit.versioning_enabled? ? 'Enabled' : 'Suspended' if File.exists?(File.join(bit.fullpath, '.git'))
 	  end
 	end
       end

@@ -92,7 +92,8 @@ class S3ApiTest < Test::Unit::TestCase
     AWS::S3::Bucket.create(bucket_name, { :access => :public_read })
     get "/#{bucket_name}/?versioning"
     assert last_response.ok?
-    assert last_response.body.include?('<Versioning>Suspended</Versioning>')
+    assert !last_response.body.include?('<Versioning>')
+    assert last_response.body.include?('<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"></VersioningConfiguration>')
 
     @user = User.find_by_login('admin')
     sts = hmac_sha1(@user.secret, "PUT\n\ntext/plain\n\n/#{bucket_name}/?versioning")

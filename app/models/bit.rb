@@ -22,7 +22,9 @@ class Bit < ActiveRecord::Base
   end
 
   def versioning_enabled?
-    defined?(Git) && File.exists?(File.join(git_repository_path,'.git')) ? true : false
+    return false if !defined?(Git) || !File.exists?(File.join(git_repository_path,'.git'))
+    return false if File.exists?(File.join(git_repository_path,'.git', 'disable_versioning'))
+    return true
   end
 
   def git_object

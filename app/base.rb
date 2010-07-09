@@ -46,6 +46,9 @@ module S3
       if (@user and secret_s != hmac_sha1(@user.secret, canonical.map{|v|v.to_s.strip} * "\n")) || (@user and @user.deleted == 1)
 	raise BadAuthentication
       end
+
+      @request_id = Time.now.to_i
+      headers 'x-amz-request-id' => @request_id.to_s
     end
 
     get '/' do
@@ -398,7 +401,7 @@ module S3
 	error.Code request.env['sinatra.error'].code
 	error.Message request.env['sinatra.error'].message
 	error.Resource env['PATH_INFO']
-	error.RequestId Time.now.to_i
+	error.RequestId @request_id
       end
 
       status request.env['sinatra.error'].status.nil? ? 500 : request.env['sinatra.error'].status

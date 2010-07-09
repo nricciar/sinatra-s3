@@ -20,9 +20,8 @@ class Bucket < Bit
     FileUtils.rm_rf bucket_dir if File.directory?(bucket_dir) && Dir.empty?(bucket_dir)
   end
 
-  def git_destroy
-    git_dir = File.join(self.fullpath, '.git')
-    FileUtils.rm_rf(git_dir) if File.exists?(git_dir)
+  def git_disable
+    FileUtils.touch(File.join(self.fullpath, '.git', 'disable_versioning'))
   end
 
   def git_init
