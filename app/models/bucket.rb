@@ -25,6 +25,9 @@ class Bucket < Bit
   end
 
   def git_init
+    disable_file = File.join(self.fullpath, '.git', 'disable_versioning')
+    FileUtils.rm_f(disable_file) and return if File.exists?(disable_file)
+
     begin
       FileUtils.mkdir_p(self.fullpath) unless File.exists?(self.fullpath)
       dir_empty = !Dir.foreach(self.fullpath) {|n| break true unless /\A\.\.?\z/ =~ n}
