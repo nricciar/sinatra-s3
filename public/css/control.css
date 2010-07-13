@@ -47,7 +47,7 @@ h4 { font-size: 21px; }
     margin: 0 auto;
     padding: 3px 20px;
     border: solid 1px #d5d8c1;
-    background: white url(/control/s/images/monopoly-car.jpg) 340px -60px no-repeat;
+    background-color: white;
     text-align: left;
 }
 

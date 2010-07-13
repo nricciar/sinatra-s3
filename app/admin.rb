@@ -16,6 +16,10 @@ module S3
       redirect '/control/buckets'
     end
 
+    get %r{^/control/s/(.*)} do
+      open(File.join(PUBLIC_PATH, params[:captures].first))
+    end
+
     get '/control/login' do
       login_view
     end
@@ -244,9 +248,9 @@ module S3
 	html.html do
 	  html.head do
 	    html << "<title>Control Center &raquo; #{str}</title>"
-	    html.script " ", :language => 'javascript', :src => '/control/js/prototype.js' 
-	    html.script " ", :language => 'javascript', :src => '/control/js/upload_status.js' if $UPLOAD_PROGRESS
-	    html.style "@import '/control/css/control.css';", :type => 'text/css'
+	    html.script " ", :language => 'javascript', :src => '/control/s/js/prototype.js' 
+	    html.script " ", :language => 'javascript', :src => '/control/s/js/upload_status.js' if $UPLOAD_PROGRESS
+	    html.style "@import '/control/s/css/control.css';", :type => 'text/css'
 	  end
 	  html.body do
 	    html.div :id => "page" do
@@ -278,7 +282,7 @@ module S3
 	html.html do
 	  html.head do
 	    html << "<title>Park Place Control Center &raquo; #{str}</title>"
-	    html.style "@import '/control/css/control.css';", :type => 'text/css'
+	    html.style "@import '/control/s/css/control.css';", :type => 'text/css'
 	  end
 	end
 	html.body do
@@ -390,7 +394,7 @@ module S3
 		html.td do
 		  html.a file.name, :href => "javascript://", :onclick => "$('details-#{file.id}').toggle()"
 		  html.div :class => "details", :id => "details-#{file.id}", :style => "display:none" do
-		    html.p "Revision: #{file.git_object.objectish}" if @bucket.versioning_enabled?
+		    html.p "Revision: #{file.git_object.objectish}" if @bucket.versioning_enabled? && !file.git_object.nil?
 		    html.p "Last modified on #{file.updated_at}"
 		    html.p do
 		      info = ["<a href=\"" + signed_url("/#{@bucket.name}/#{file.name}") + "\" target=\"_blank\">Get</a>"]

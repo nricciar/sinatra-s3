@@ -18,6 +18,7 @@ DEFAULT_PASSWORD = 'pass@word1'
 DEFAULT_SECRET = 'OtxrzxIsfpFjA7SwPzILwy8Bw21TLhquhboDYROV'
 
 BUFSIZE = (4 * 1024)
+PUBLIC_PATH = File.join(File.expand_path(File.dirname(__FILE__)), 'public')
 STORAGE_PATH = File.join(File.expand_path(File.dirname(__FILE__)), 'storage') unless defined?(STORAGE_PATH)
 RESOURCE_TYPES = %w[acl versioning]
 CANNED_ACLS = {

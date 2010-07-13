@@ -51,6 +51,11 @@ module S3
       headers 'x-amz-request-id' => @request_id.to_s
     end
 
+    def call(env)
+      return if env['REQUEST_PATH'] =~ /^\/control/
+      super(env)
+    end
+
     get '/' do
       only_authorized
       buckets = Bucket.user_buckets(@user.id)
