@@ -279,7 +279,7 @@ module S3
 	source_oid = $2
 
 	source_slot = Bucket.find_root(source_bucket_name).find_slot(source_oid)
-	@meta = source_slot.meta unless env['HTTP_X_AMZ_METADATA_DIRECTIVE'].upcase == "REPLACE"
+	@meta = source_slot.meta unless !env['HTTP_X_AMZ_METADATA_DIRECTIVE'].nil? && env['HTTP_X_AMZ_METADATA_DIRECTIVE'].upcase == "REPLACE"
 	only_can_read source_slot
 
 	unless env['HTTP_X_AMZ_COPY_SOURCE_IF_MATCH'].blank?
@@ -287,6 +287,12 @@ module S3
 	end
 	unless env['HTTP_X_AMZ_COPY_SOURCE_IF_NONE_MATCH'].blank?
 	  raise PreconditionFailed if source_slot.obj.etag == env['HTTP_X_AMZ_COPY_SOURCE_IF_NONE_MATCH']
+	end
+	unless env['HTTP_X_AMZ_COPY_SOURCE_IF_UNMODIFIED_SINCE'].blank?
+	  raise PreconditionFailed if Time.httpdate(env['HTTP_X_AMZ_COPY_SOURCE_IF_UNMODIFIED_SINCE']) > source_slot.updated_at
+	end
+	unless env['HTTP_X_AMZ_COPY_SOURCE_IF_MODIFIED_SINCE'].blank?
+	  raise PreconditionFailed if Time.httpdate(env['HTTP_X_AMZ_COPY_SOURCE_IF_MODIFIED_SINCE']) < source_slot.updated_at
 	end
 
 	temp_path = File.join(STORAGE_PATH, source_slot.obj.path)
@@ -374,8 +380,20 @@ module S3
 	  puts "[#{Time.now}] GIT: #{error_message}"
 	end
       end
-      headers h
-      body ""
+
+      if env['HTTP_X_AMZ_COPY_SOURCE'].blank?
+	headers h
+        body ""
+      else
+	h['Content-Length'] = nil
+	headers h
+	xml do |x|
+	  x.CopyObjectResult do
+	    x.LastModified slot.updated_at.httpdate
+	    x.Etag slot.etag
+	  end
+	end
+      end
     end
 
     # delete slot
