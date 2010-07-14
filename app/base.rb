@@ -279,8 +279,15 @@ module S3
 	source_oid = $2
 
 	source_slot = Bucket.find_root(source_bucket_name).find_slot(source_oid)
-	@meta = source_slot.meta
+	@meta = source_slot.meta unless env['HTTP_X_AMZ_METADATA_DIRECTIVE'].upcase == "REPLACE"
 	only_can_read source_slot
+
+	unless env['HTTP_X_AMZ_COPY_SOURCE_IF_MATCH'].blank?
+	  raise PreconditionFailed if source_slot.obj.etag != env['HTTP_X_AMZ_COPY_SOURCE_IF_MATCH']
+	end
+	unless env['HTTP_X_AMZ_COPY_SOURCE_IF_NONE_MATCH'].blank?
+	  raise PreconditionFailed if source_slot.obj.etag == env['HTTP_X_AMZ_COPY_SOURCE_IF_NONE_MATCH']
+	end
 
 	temp_path = File.join(STORAGE_PATH, source_slot.obj.path)
 	fileinfo = source_slot.obj
