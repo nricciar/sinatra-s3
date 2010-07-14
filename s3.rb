@@ -14,6 +14,13 @@ rescue LoadError
   puts "-- Git support not found, versioning support disabled."
 end
 
+begin
+  require 'exifr'
+  puts "-- EXIFR found, JPEG metadata enabled."
+rescue LoadError
+  puts "-- EXIFR not found, JPEG metadata disabled."
+end
+
 DEFAULT_PASSWORD = 'pass@word1'
 DEFAULT_SECRET = 'OtxrzxIsfpFjA7SwPzILwy8Bw21TLhquhboDYROV'
 
@@ -34,6 +41,7 @@ READABLE_BY_AUTH = 0040
 WRITABLE_BY_AUTH = 0020
 
 POST = %{if(!this.title||confirm(this.title+'?')){var f = document.createElement('form'); this.parentNode.appendChild(f); f.method = 'POST'; f.action = this.href; f.submit();}return false;}
+POPUP = %{window.open(this.href,'changelog','height=600,width=500,scrollbars=1');return false;}
 
 require "#{File.dirname(__FILE__)}/app/models/nested_set"
 ActiveRecord::Base.send :include, ActiveRecord::Acts::NestedSet

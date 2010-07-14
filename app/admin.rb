@@ -11,6 +11,10 @@ module S3
 
     set :sessions, :on
 
+    before do
+      ActiveRecord::Base.verify_active_connections!
+    end
+
     get '/control/?' do
       login_required
       redirect '/control/buckets'
@@ -100,6 +104,14 @@ module S3
       fileinfo.etag = '"' + md5.hexdigest + '"'
 
       mdata = {}
+      if defined?(EXIFR) && fileinfo.mime_type =~ /jpg|jpeg/
+	photo_data = EXIFR::JPEG.new(tmpf.path).to_hash
+	photo_data.each_pair do |key,value|
+	  tmp = key.to_s.gsub(/[^a-z0-9]+/i, '-').downcase.gsub(/-$/,'')
+	  mdata[tmp] = value.to_s
+	end
+      end
+
       params['fname'] = params['upfile'][:filename] if params['fname'].blank?
       begin
 	slot = @bucket.find_slot(params['fname'])
@@ -240,6 +252,44 @@ module S3
 	@usero.destroy
       end
       redirect "/control/users"
+    end
+
+    get %r{^/control/acl/(.+?)/(.+)$} do
+      login_required
+      @bucket = Bucket.find_root(params[:captures].first)
+      only_can_write_acp @bucket
+      @slot = @bucket.find_slot(params[:captures].last)
+      acl_view
+    end
+
+    get %r{^/control/meta/(.+?)/(.+)$} do
+      login_required
+      @bucket = Bucket.find_root(params[:captures].first)
+      only_can_write @bucket
+      @slot = @bucket.find_slot(params[:captures].last)
+      meta_view
+    end
+
+    post %r{^/control/meta/(.+?)/(.+)$} do
+      login_required
+      @bucket = Bucket.find_root(params[:captures].first)
+      only_can_write @bucket
+      @slot = @bucket.find_slot(params[:captures].last)
+
+      newm = {}
+      params[:m].each do |k,v|
+	newm[k] = v unless v.blank?
+      end
+      if !params[:meta]['key'].blank? && !params[:meta]['value'].blank?
+	if params[:meta]['key'] =~ /^[A-Za-z0-9\-]+$/
+	  newm[params[:meta]['key']] = params[:meta]['value']
+	else
+	  @slot.errors.add(:key, "can only contain letters, numbers and dashes")
+	end
+      end
+
+      @slot.update_attributes({ :meta => newm })
+      meta_view
     end
 
     protected
@@ -398,7 +448,9 @@ module S3
 		    html.p "Last modified on #{file.updated_at}"
 		    html.p do
 		      info = ["<a href=\"" + signed_url("/#{@bucket.name}/#{file.name}") + "\" target=\"_blank\">Get</a>"]
-		      info += ["<a href=\"/control/changes/#{@bucket.name}/#{file.name}\" onclick=\"window.open(this.href,'changelog','height=600,width=500');return false;\">Changes</a>"] if @bucket.versioning_enabled?
+		      info += ["<a href=\"/control/acl/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">ACLs</a>"]
+		      info += ["<a href=\"/control/meta/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">Meta</a>"]
+		      info += ["<a href=\"/control/changes/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">Changes</a>"] if @bucket.versioning_enabled?
 		      info += ["<a href=\"/control/delete/#{@bucket.name}/#{file.name}\" onclick=\"#{POST}\" title=\"Delete file #{file.name}\">Delete</a>"]
 		      html << info.join(" &bull; ")
 		    end
@@ -532,6 +584,53 @@ module S3
 	  end
 	  html.input :type => 'submit', :value => "Save", :id => "newfile", :name => "newfile"
 	end
+      end
+    end
+
+    def meta_view
+      popup_layout("") do |html|
+	html.form :method => 'post', :class => 'create', :style => "text-align:left" do
+	  html << errors_for(@slot)
+	  html.table do
+	    html.thead do
+	      html.tr do
+	        html.th "Key"
+	        html.th "Value"
+	      end
+	    end
+	    html.tbody do
+	      if @slot.meta.empty?
+		html.tr { html.td "No Metadata", :colspan => "2", :style => "padding:8px;text-align:center" }
+	      else
+	        @slot.meta.each do |k,v|
+	          html.tr do
+	  	    html.td k
+		    html.td { html.input :name => "m[#{k}]", :type => "text", :value => v, :style => "width:100%" }
+	          end
+	        end
+	      end
+	    end
+	    html.thead { html.tr { html.th "New Key", :colspan => "2" } }
+	    html.tbody do
+	      html.tr do
+		html.td do
+		  html.input :name => "meta[key]", :type => "text", :style => "width:100%"
+		end
+		html.td do
+		  html.input :name => "meta[value]", :type => "text", :style => "width:100%"
+		end
+	      end
+	    end
+	  end
+	  html.div :style => "text-align:center;margin-top:15px" do
+	    html.input :type => "submit", :value => "Update"
+	  end
+	end
+      end
+    end
+
+    def acl_view
+      popup_layout("") do |html|
       end
     end
 
