@@ -254,27 +254,36 @@ module S3
       redirect "/control/users"
     end
 
+    get %r{^/control/edit/(.+?)/(.+)$} do
+      login_required
+      @bucket = Bucket.find_root(params[:captures].first)
+      @slot = @bucket.find_slot(params[:captures].last)
+      only_can_write @slot
+      edit_view
+    end
+
     get %r{^/control/acl/(.+?)/(.+)$} do
       login_required
       @bucket = Bucket.find_root(params[:captures].first)
       only_can_write_acp @bucket
       @slot = @bucket.find_slot(params[:captures].last)
+      only_can_write @slot
       acl_view
     end
 
     get %r{^/control/meta/(.+?)/(.+)$} do
       login_required
       @bucket = Bucket.find_root(params[:captures].first)
-      only_can_write @bucket
       @slot = @bucket.find_slot(params[:captures].last)
+      only_can_write @slot
       meta_view
     end
 
     post %r{^/control/meta/(.+?)/(.+)$} do
       login_required
       @bucket = Bucket.find_root(params[:captures].first)
-      only_can_write @bucket
       @slot = @bucket.find_slot(params[:captures].last)
+      only_can_write @slot
 
       newm = {}
       params[:m].each do |k,v|
@@ -448,7 +457,7 @@ module S3
 		    html.p "Last modified on #{file.updated_at}"
 		    html.p do
 		      info = ["<a href=\"" + signed_url("/#{@bucket.name}/#{file.name}") + "\" target=\"_blank\">Get</a>"]
-		      info += ["<a href=\"/control/acl/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">ACLs</a>"]
+		      info += ["<a href=\"/control/acl/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">Access</a>"]
 		      info += ["<a href=\"/control/meta/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">Meta</a>"]
 		      info += ["<a href=\"/control/changes/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">Changes</a>"] if @bucket.versioning_enabled?
 		      info += ["<a href=\"/control/delete/#{@bucket.name}/#{file.name}\" onclick=\"#{POST}\" title=\"Delete file #{file.name}\">Delete</a>"]
@@ -629,8 +638,37 @@ module S3
       end
     end
 
+    def edit_view
+      default_layout(@slot.name) do |html|
+	html.form :method => 'post', :class => 'create' do
+	  html.textarea "", :name => "slot[file_data]", :style => "width:100%;height:20em"
+	  html.div :class => "required" do
+	    html.label "Content-Type", :for => "slot[content_type]"
+	    html.input :name => "slot[content_type]", :type => "text", :value => @slot.obj.mime_type
+	  end
+	  html.input :type => "submit", :value => "Update"
+	end
+      end
+    end
+
     def acl_view
       popup_layout("") do |html|
+	html.table do
+	  html.thead do
+	    html.tr do
+	      html.th "For"
+	      html.th "Access"
+	    end
+	  end
+	  html.tbody do
+	    @slot.acl_list.each_pair do |key,acl|
+	      html.tr do
+		html.td acl[:type] == "CanonicalUser" ? "#{acl[:id]} (#{acl[:name]})" : acl[:uri]
+		html.td acl[:access]
+	      end
+	    end
+	  end
+	end
       end
     end
 
