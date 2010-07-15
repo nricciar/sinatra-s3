@@ -358,7 +358,7 @@ module S3
 	else
 	  FileUtils.cp(temp_path, file_path)
 	end
-	slot.update_attributes(:owner_id => owner_id, :meta => meta, :obj => fileinfo)
+	slot.update_attributes(:owner_id => owner_id, :meta => meta, :obj => fileinfo, :size => fileinfo.size)
       rescue NoSuchKey
 	if source_slot.nil?
 	  fileinfo.path = File.join(params[:captures].first, rand(10000).to_s(36) + '_' + File.basename(temp_path))
@@ -369,7 +369,7 @@ module S3
 	else
 	  FileUtils.cp(temp_path, file_path)
 	end
-	slot = Slot.create(:name => params[:captures].last, :owner_id => owner_id, :meta => meta, :obj => fileinfo)
+	slot = Slot.create(:name => params[:captures].last, :owner_id => owner_id, :meta => meta, :obj => fileinfo, :size => fileinfo.size)
 	bucket.add_child(slot)
       end
       slot.grant(requested_acl(slot))

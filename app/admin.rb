@@ -95,8 +95,6 @@ module S3
 	md5 << part
       end
 
-      puts params[:upfile].inspect
-
       fileinfo = FileInfo.new
       fileinfo.mime_type = params['upfile'][:type] || "binary/octet-stream"
       fileinfo.size = readlen
@@ -122,7 +120,7 @@ module S3
 	end
 	fileinfo.path = slot.obj.path
 	file_path = File.join(STORAGE_PATH,fileinfo.path)
-	slot.update_attributes(:owner_id => @user.id, :meta => mdata, :obj => fileinfo)
+	slot.update_attributes(:owner_id => @user.id, :meta => mdata, :obj => fileinfo, :size => fileinfo.size)
 	FileUtils.mv(tmpf.path, file_path,{ :force => true })
       rescue NoSuchKey
 	fileinfo.path = File.join(params[:bucket], rand(10000).to_s(36) + '_' + File.basename(tmpf.path))
@@ -130,7 +128,7 @@ module S3
 	file_path = File.join(STORAGE_PATH,fileinfo.path)
 	FileUtils.mkdir_p(File.dirname(file_path))
 	FileUtils.mv(tmpf.path, file_path)
-	slot = Slot.create(:name => params['fname'], :owner_id => @user.id, :meta => mdata, :obj => fileinfo)
+	slot = Slot.create(:name => params['fname'], :owner_id => @user.id, :meta => mdata, :obj => fileinfo, :size => fileinfo.size)
 	slot.grant(:access => params['facl'].to_i)
 	@bucket.add_child(slot)
       end
@@ -471,7 +469,7 @@ module S3
 		    end
 		  end
 		end
-		html.td number_to_human_size(file.obj.size)
+		html.td number_to_human_size(file.size)
 		html.td file.access_readable
 	      end
 	    end
@@ -518,6 +516,7 @@ module S3
 	    html.tr do
 	      html.th "Login"
 	      html.th "Activated On"
+	      html.th "Total Storage"
 	      html.th "Actions"
 	    end
 	  end
@@ -526,6 +525,7 @@ module S3
 	      html.tr do
 		html.th { html.a user.login, :href => "/control/users/#{user.login}" }
 		html.td user.activated_at
+		html.td number_to_human_size(Bit.sum(:size, :conditions => [ 'owner_id = ?', user.id ]))
 		html.td { html.a "Delete", :href => "/control/users/delete/#{user.login}", :onclick => POST, :title => "Delete user #{user.login}" }
 	      end
 	    end
