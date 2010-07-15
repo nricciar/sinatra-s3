@@ -38,7 +38,7 @@ class S3ApiTest < Test::Unit::TestCase
     file = File.join(File.dirname(__FILE__), 'file.jpg')
     bucket = AWS::S3::Bucket.find(bucket_name)
     assert bucket.size == 0
-    assert S3Object.store(file, open(file), bucket_name, { :access => :public_read })
+    assert S3Object.store('file.jpg', open(file), bucket_name, { :access => :public_read })
     assert bucket.size == 1
     begin
       AWS::S3::Bucket.delete(bucket_name)
