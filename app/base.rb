@@ -190,7 +190,7 @@ module S3
       if params.has_key?('version-id')
 	@revision = bucket.git_repository.gcommit(params['version-id'])
 	h.merge!({ 'x-amz-version-id' => @revision.sha })
-	@slot = bucket.find_slot(params[:captures].last)
+	@slot = Slot.find_by_version(@revision.sha)
 	@revision_file = @revision.gtree.blobs[File.basename(@slot.fullpath)].contents { |f| f.read }
       else
 	@slot = bucket.find_slot(params[:captures].last)
@@ -346,6 +346,11 @@ module S3
 
       begin
 	slot = bucket.find_slot(params[:captures].last)
+	if slot.versioning_enabled?
+	  nslot = slot.clone()
+	  slot.update_attributes(:deleted => true)
+	  slot = nslot
+	end
 	if source_slot.nil?
 	  fileinfo.path = slot.obj.path
 	  file_path = File.join(STORAGE_PATH,fileinfo.path)
@@ -375,6 +380,7 @@ module S3
 	  slot.git_repository.add(File.basename(fileinfo.path))
 	  tmp = slot.git_repository.commit("Added #{slot.name} to the Git repository.")
 	  slot.git_update
+	  slot.update_attributes(:version => slot.git_object.objectish)
 	  h.merge!({ 'x-amz-version-id' => slot.git_object.objectish })
 	rescue Git::GitExecuteError => error_message
 	  puts "[#{Time.now}] GIT: #{error_message}"

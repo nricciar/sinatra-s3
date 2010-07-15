@@ -115,6 +115,11 @@ module S3
       params['fname'] = params['upfile'][:filename] if params['fname'].blank?
       begin
 	slot = @bucket.find_slot(params['fname'])
+	if slot.versioning_enabled?
+	  nslot = slot.clone()
+	  slot.update_attributes(:deleted => true)
+	  slot = nslot
+	end
 	fileinfo.path = slot.obj.path
 	file_path = File.join(STORAGE_PATH,fileinfo.path)
 	slot.update_attributes(:owner_id => @user.id, :meta => mdata, :obj => fileinfo)
@@ -135,6 +140,7 @@ module S3
 	  slot.git_repository.add(File.basename(fileinfo.path))
 	  slot.git_repository.commit("Added #{slot.name} to the Git repository.")
 	  slot.git_update
+	  slot.update_attributes(:version => slot.git_object.objectish)
 	rescue => err
 	  puts "[#{Time.now}] GIT: #{err}"
 	end
