@@ -10,3 +10,11 @@ class Dir
   end
 end
 
+class String
+  def to_hex_s
+    unpack("H*").first
+  end
+  def from_hex_s
+    [self].pack("H*")
+  end
+end
