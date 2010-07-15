@@ -1,7 +1,5 @@
 class Bit < ActiveRecord::Base
 
-  acts_as_nested_set
-
   has_many :bits_users
 
   serialize :meta

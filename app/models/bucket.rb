@@ -24,6 +24,10 @@ class Bucket < Bit
     FileUtils.touch(File.join(self.fullpath, '.git', 'disable_versioning'))
   end
 
+  def add_child(bit)
+    bit.update_attributes(:parent_id => self.id)
+  end
+
   def git_init
     disable_file = File.join(self.fullpath, '.git', 'disable_versioning')
     FileUtils.rm_f(disable_file) and return if File.exists?(disable_file)

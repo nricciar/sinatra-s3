@@ -92,7 +92,7 @@ module S3
       query = bucket.items(params['marker'],params['prefix'])
       slot_count = query.count
       contents = query.find(:all, :include => :owner, 
-			    :limit => params['max-keys'].blank? ? 1000 : params['max-keys'])
+	:limit => params['max-keys'].blank? ? 1000 : params['max-keys'])
 
       if params['delimiter']
 	# Build a hash of { :prefix => content_key }. The prefix will not include the supplied params['prefix'].
