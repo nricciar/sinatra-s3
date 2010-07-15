@@ -136,6 +136,24 @@ class Bit < ActiveRecord::Base
     end
   end
 
+  def each_piece(files, length)
+     buf = ""
+     files.each do |f|
+         File.open(f) do |fh|
+             begin
+                 read = fh.read(length - buf.length)
+                 if (buf.length + read.length) == length
+                     yield(buf + read)
+                     buf = ""
+                 else
+                     buf += read
+                 end
+             end until fh.eof?
+         end
+     end
+     yield buf
+  end
+
 end
 
 class BitsUser < ActiveRecord::Base

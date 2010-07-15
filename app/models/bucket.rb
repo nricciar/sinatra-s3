@@ -53,4 +53,29 @@ class Bucket < Bit
     end
   end
 
+  def metainfo
+    children = self.all_children
+    mii = RubyTorrent::MetaInfoInfo.new
+    mii.name = self.name
+    mii.piece_length = 512.kilobytes
+    mii.files, files = [], []
+    mii.pieces = ""
+    i = 0
+    Slot.find(:all, :conditions => ['parent_id = ?', self.id]).each do |slot|
+      miif = RubyTorrent::MetaInfoInfoFile.new
+      miif.length = slot.obj.size
+      miif.md5sum = slot.obj.md5
+      miif.path = File.split(slot.name)
+      mii.files << miif
+      files << slot.fullpath
+    end
+    each_piece(files, mii.piece_length) do |piece|
+      mii.pieces += Digest::SHA1.digest(piece)
+      i += 1
+    end
+    mi = RubyTorrent::MetaInfo.new
+    mi.info = mii
+    mi
+  end
+
 end

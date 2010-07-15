@@ -21,6 +21,13 @@ rescue LoadError
   puts "-- EXIFR not found, JPEG metadata disabled."
 end
 
+begin
+  require 'rubytorrent'
+  puts "-- RubyTorrent support found, bittorrent support enabled."
+rescue LoadError
+  puts "-- RubyTorrent support not found, bittorrent support disabled."
+end
+
 DEFAULT_PASSWORD = 'pass@word1'
 DEFAULT_SECRET = 'OtxrzxIsfpFjA7SwPzILwy8Bw21TLhquhboDYROV'
 

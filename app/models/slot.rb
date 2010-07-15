@@ -19,6 +19,23 @@ class Slot < Bit
     FileUtils.rm_f fullpath
   end
 
+  def metainfo
+    mii = RubyTorrent::MetaInfoInfo.new
+    mii.name = self.name
+    mii.length = self.obj.size
+    mii.md5sum = self.obj.md5
+    mii.piece_length = 512.kilobytes
+    mii.pieces = ""
+    i = 0
+    each_piece([self.fullpath], mii.piece_length) do |piece|
+      mii.pieces += Digest::SHA1.digest(piece)
+      i += 1
+    end
+    mi = RubyTorrent::MetaInfo.new({ })
+    mi.info = mii
+    mi
+  end
+
   protected
   def self.condition_string(marker,prefix)
     conditions = []

@@ -13,6 +13,7 @@ module S3
 
     helpers do
       include S3::Helpers
+      include S3::TrackerHelper
     end
 
     configure do
@@ -228,6 +229,8 @@ module S3
       if params.has_key?('version-id')
         headers h
 	body @revision_file
+      elsif params.has_key?('torrent')
+	torrent @slot
       elsif @slot.obj.kind_of?(FileInfo) && env['HTTP_RANGE'] =~ /^bytes=(\d+)?-(\d+)?$/ # yay, parse basic ranges
 	range_start = $1
 	range_end = $2
