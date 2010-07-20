@@ -1,11 +1,18 @@
 An implementation of the S3 API in Sinatra.  Most of the code was originaly taken from
 ParkPlace, another S3 clone written by _why.
 
-REQUIREMENTS
+Requirements
+-------------------------------------------------------
 
   gem install sinatra builder aws-s3
 
-INSTALL
+Optional Torrent Support
+-------------------------------------------------------
+
+If you are interested in using Sinatra-S3 as a Bittorrent tracker you will need a custom
+version of RubyTorrent found at http://github.com/nricciar/rubytorrent.
+
+Install
 -------------------------------------------------------
 
   1) cp s3.yml.example s3.yml

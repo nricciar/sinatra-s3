@@ -6,6 +6,7 @@ module S3
     def torrent(bit)
       mi = bit.metainfo
       mi.announce = URI("http://#{env['HTTP_HOST']}/tracker/announce")
+      mi.url_list = URI("http://#{env['HTTP_HOST']}/#{bit.parent.name}/#{bit.name}")
       mi.created_by = "Served by Sinatra-S3/0.1a"
       mi.creation_date = Time.now
       t = Torrent.find_by_bit_id bit.id

@@ -5,6 +5,7 @@ class Bit < ActiveRecord::Base
   serialize :meta
   serialize :obj
 
+  belongs_to :parent, :class_name => 'Bit', :foreign_key => 'parent_id'
   belongs_to :owner, :class_name => 'User', :foreign_key => 'owner_id'
 
   validates_length_of :name, :within => 3..255
