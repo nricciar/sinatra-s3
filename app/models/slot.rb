@@ -31,7 +31,7 @@ class Slot < Bit
       mii.pieces += Digest::SHA1.digest(piece)
       i += 1
     end
-    mi = RubyTorrent::MetaInfo.new({ })
+    mi = RubyTorrent::MetaInfo.new
     mi.info = mii
     mi
   end

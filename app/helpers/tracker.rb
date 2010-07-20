@@ -5,7 +5,7 @@ module S3
 
     def torrent(bit)
       mi = bit.metainfo
-      mi.announce = URI("http://#{env['HTTP_HOST']}/tracker")
+      mi.announce = URI("http://#{env['HTTP_HOST']}/tracker/announce")
       mi.created_by = "Served by Sinatra-S3/0.1a"
       mi.creation_date = Time.now
       t = Torrent.find_by_bit_id bit.id
@@ -21,7 +21,7 @@ module S3
 
     def torrent_list(info_hash)
       params = {:order => 'seeders DESC, leechers DESC', :include => :bit}
-      params[:conditions] = ['info_hash = ?', info_hash] if info_hash
+      params[:conditions] = ['info_hash = ?', info_hash.to_hex_s] if info_hash
       Torrent.find :all, params
     end
 
