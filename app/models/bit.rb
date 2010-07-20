@@ -10,6 +10,8 @@ class Bit < ActiveRecord::Base
 
   validates_length_of :name, :within => 3..255
 
+  has_one :torrent
+
   def git_repository
     versioning_enabled? ? Git.open(git_repository_path) : nil
   end

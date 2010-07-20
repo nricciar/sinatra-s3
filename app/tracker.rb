@@ -87,31 +87,41 @@ module S3
 	html.html do
 	  html.head do
 	    html.title "Sinatra-S3 Torrents"
+	    html.style "@import '/control/s/css/control.css';", :type => 'text/css'
 	  end
 	end
-	html.body do
-	  html.table do
-	    html.thead do
-	      html.tr do
-		html.th "Name"
-		html.th "Size"
-		html.th "Seeders"
-		html.th "Leechers"
-		html.th "Downloads"
-		html.th "Transfered"
-		html.th "Since"
-	      end
-	    end
-	    html.tbody do
-	      @torrents.each do |t|
-		html.tr do
-		  html.td t.bit.name
-		  html.td number_to_human_size(t.bit.size)
-		  html.td t.seeders
-		  html.td t.leechers
-		  html.td t.total
-		  html.td number_to_human_size(@transfer[t])
-		  html.td "" #t.metainfo.creation_date
+	html.div :id => "page" do
+	  html.div :id => "header" do
+	    html.h1 "Sinatra-S3 Tracker"
+	    html.h2 "Active Torrents"
+	  end
+
+	  html.div :id => "content" do
+	    html.body do
+	      html.table do
+		html.thead do
+		  html.tr do
+		    html.th "Name"
+		    html.th "Size"
+		    html.th "Seeders"
+		    html.th "Leechers"
+		    html.th "Downloads"
+		    html.th "Transfered"
+		    html.th "Since"
+		  end
+		end
+		html.tbody do
+		  @torrents.each do |t|
+		    html.tr do
+		      html.td t.bit.name
+		      html.td number_to_human_size(t.bit.size)
+		      html.td t.seeders
+		      html.td t.leechers
+		      html.td t.total
+		      html.td number_to_human_size(@transfer[t])
+		      html.td RubyTorrent::MetaInfo.from_stream(StringIO.new(t.metainfo)).creation_date #t.metainfo.creation_date
+		    end
+		  end
 		end
 	      end
 	    end

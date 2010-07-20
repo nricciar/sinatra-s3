@@ -458,12 +458,18 @@ module S3
 		  html.a file.name, :href => "javascript://", :onclick => "$('details-#{file.id}').toggle()"
 		  html.div :class => "details", :id => "details-#{file.id}", :style => "display:none" do
 		    html.p "Revision: #{file.git_object.objectish}" if @bucket.versioning_enabled? && !file.git_object.nil?
+		    if file.torrent
+		      html << "<p>" + ["#{file.torrent.seeders} seeders",
+			"#{file.torrent.leechers} leechers",
+			"#{file.torrent.total} downloads" ].join(" &bull; ") + "</p>"
+		    end
 		    html.p "Last modified on #{file.updated_at}"
 		    html.p do
 		      info = ["<a href=\"" + signed_url("/#{@bucket.name}/#{file.name}") + "\" target=\"_blank\">Get</a>"]
 		      info += ["<a href=\"/control/acl/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">Access</a>"]
 		      info += ["<a href=\"/control/meta/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">Meta</a>"]
 		      info += ["<a href=\"/control/changes/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">Changes</a>"] if @bucket.versioning_enabled?
+		      info += ["<a href=\"" + signed_url("/#{@bucket.name}/#{file.name}") + "&torrent\" target=\"_blank\">Torrent</a>"] if defined?(RubyTorrent)
 		      info += ["<a href=\"/control/delete/#{@bucket.name}/#{file.name}\" onclick=\"#{POST}\" title=\"Delete file #{file.name}\">Delete</a>"]
 		      html << info.join(" &bull; ")
 		    end
