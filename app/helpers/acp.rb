@@ -35,6 +35,16 @@ module S3
         end
       end
 
+      def update_user_access(slot,user,access)
+        if slot.acl_list[user.key]
+          unless access == slot.acl_list[user.key][:access]
+            BitsUser.update_all("access = #{access}", ["bit_id = ? AND user_id = ?", slot.id, user.id ])
+          end
+        else
+          BitsUser.create(:bit_id => slot.id, :user_id => user.id, :access => access)
+        end
+      end
+
       # Parse any ACL requests which have come in.
       def requested_acl(slot=nil)
         if slot && params.has_key?('acl')

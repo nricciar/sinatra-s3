@@ -275,6 +275,26 @@ module S3
       acl_view
     end
 
+    post %r{^/control/acl/(.+?)/(.+)$} do
+      login_required
+      @bucket = Bucket.find_root(params[:captures].first)
+      @slot = @bucket.find_slot(params[:captures].last)
+      only_owner_of @slot
+      case params[:acl]['type']
+      when "email"
+	@user = User.find(:first, :conditions => [ 'key = ? OR email = ?', params[:acl]['user_id'], params[:acl]['user_id'] ])
+	update_user_access(@slot,@user,"#{Bit.acl_text.invert[params[:acl]['access']]}00".to_i(8)) if @user
+      when "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
+	@slot.access &= ~(@slot.access.to_s(8)[1,1].to_i*10)
+	@slot.access |= (Bit.acl_text.invert[params[:acl]['access']]*10).to_s.to_i(8)
+      when "http://acs.amazonaws.com/groups/global/AllUsers"
+	@slot.access &= ~@slot.access.to_s(8)[2,1].to_i
+	@slot.access |= Bit.acl_text.invert[params[:acl]['access']].to_s.to_i(8)
+      end
+      @slot.save()
+      redirect "/control/acl/#{@bucket.name}/#{@slot.name}"
+    end
+
     get %r{^/control/meta/(.+?)/(.+)$} do
       login_required
       @bucket = Bucket.find_root(params[:captures].first)
@@ -345,6 +365,7 @@ module S3
 	html.html do
 	  html.head do
 	    html << "<title>Park Place Control Center &raquo; #{str}</title>"
+	    html.script " ", :language => 'javascript', :src => '/control/s/js/prototype.js'
 	    html.style "@import '/control/s/css/control.css';", :type => 'text/css'
 	  end
 	end
@@ -675,10 +696,37 @@ module S3
 	  html.tbody do
 	    @slot.acl_list.each_pair do |key,acl|
 	      html.tr do
-		html.td acl[:type] == "CanonicalUser" ? "#{acl[:id]} (#{acl[:name]})" : acl[:uri]
+		html.td acl[:type] == "CanonicalUser" ? "#{acl[:id]} (#{acl[:name]})" : acl[:uri].split("/").last
 		html.td acl[:access]
 	      end
 	    end
+	  end
+	end
+	html.div :style => "text-align:left;margin-top:10px" do
+	  html.h3 "Modify File Access"
+	  html.form :class => "create", :method => "post" do
+	    html.div :class => "required" do
+	      html.label "For", :for => "acl_type"
+	      html.select :name => "acl[type]", :id => "acl_type", :onchange => "$('user_id_box').style.display = this.value == 'email' ? 'block' : 'none';" do
+		html.option "AllUsers", :value => "http://acs.amazonaws.com/groups/global/AllUsers"
+		html.option "AuthenticatedUsers", :value => "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
+		html.option "By ID/E-Mail", :value => "email"
+	      end
+	    end
+	    html.div :class => "required", :style => "display:none", :id => "user_id_box" do
+	      html.label "User ID / E-Mail", :for => "user_id"
+	      html.input :type => "text", :name => "acl[user_id]", :id => "user_id"
+	    end
+	    html.div :class => "required" do
+	      html.label "Access", :for => "user_access"
+	      html.select :name => "acl[access]", :id => "user_access" do
+		html.option "READ", :value => "READ"
+		html.option "READ_ACP", :value => "READ_ACP"
+		html.option "WRITE", :value => "WRITE"
+		html.option "WRITE_ACP", :value => "WRITE_ACP"
+	      end
+	    end
+	    html.input :type => "submit", :value => "Update"
 	  end
 	end
       end
