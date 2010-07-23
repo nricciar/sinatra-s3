@@ -266,7 +266,28 @@ module S3
     end
 
     # create slot
+    post %r{^/(.+?)/(.+)$} do
+      env['rack.input'] = params[:file].instance_of?(File) ? params[:file] : StringIO.new(params[:file])
+      env['CONTENT_LENGTH'] = env['rack.input'].length
+      params.each do |k,v|
+	case k
+	when k =~ /^x-amz-meta-(.*)$/
+	  @meta[$1] = v
+	when k.downcase =~ /content-type/
+	  env['CONTENT_TYPE'] = v
+	when k.downcase =~ /content-disposition/
+	  env['CONTENT_DISPOSITION'] = v
+	end
+      end
+      create_slot
+    end
+
+    # create slot
     put %r{^/(.+?)/(.+)$} do
+      create_slot
+    end
+
+    def create_slot
       bucket = Bucket.find_root(params[:captures].first)
       only_can_write bucket
 
@@ -326,7 +347,7 @@ module S3
 	fileinfo.etag = '"' + md5.hexdigest + '"'
 
 	raise IncompleteBody if env['CONTENT_LENGTH'].to_i != readlen
-	if @env['HTTP_CONTENT_MD5']
+	if env['HTTP_CONTENT_MD5']
 	  b64cs = /[0-9a-zA-Z+\/]/
 	    re = /
 	    ^
@@ -336,8 +357,8 @@ module S3
 	     $
 	  /ox
 
-	  raise InvalidDigest unless @env['HTTP_CONTENT_MD5'] =~ re
-	  raise BadDigest unless fileinfo.md5 == @env['HTTP_CONTENT_MD5']
+	  raise InvalidDigest unless env['HTTP_CONTENT_MD5'] =~ re
+	  raise BadDigest unless fileinfo.md5 == env['HTTP_CONTENT_MD5']
 	end
       end
 
