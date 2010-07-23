@@ -267,18 +267,18 @@ module S3
 
     # create slot
     post %r{^/(.+?)/(.+)$} do
-      env['rack.input'] = params[:file].instance_of?(File) ? params[:file] : StringIO.new(params[:file])
-      env['CONTENT_LENGTH'] = env['rack.input'].length
       params.each do |k,v|
-	case k
+	case
 	when k =~ /^x-amz-meta-(.*)$/
 	  @meta[$1] = v
-	when k.downcase =~ /content-type/
+	when k =~ /content-type/i
 	  env['CONTENT_TYPE'] = v
-	when k.downcase =~ /content-disposition/
+	when k =~ /content-disposition/i
 	  env['CONTENT_DISPOSITION'] = v
 	end
       end
+      env['rack.input'] = params[:file].instance_of?(File) ? params[:file] : StringIO.new(params[:file])
+      env['CONTENT_LENGTH'] = env['rack.input'].length
       create_slot
     end
 
