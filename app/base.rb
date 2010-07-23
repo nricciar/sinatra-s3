@@ -412,6 +412,9 @@ module S3
       end
 
       if env['HTTP_X_AMZ_COPY_SOURCE'].blank?
+	redirect_url = (params[:redirect] || params[:success_action_redirect])
+	redirect redirect_url unless redirect_url.blank?
+	status params[:success_action_status].to_i if params[:success_action_status]
 	headers h
         body ""
       else
