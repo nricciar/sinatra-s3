@@ -289,7 +289,12 @@ module S3
 
     def create_slot
       bucket = Bucket.find_root(params[:captures].first)
-      only_can_write bucket
+      begin
+        slot = bucket.find_slot(params[:captures].last)
+        only_can_write slot unless slot.nil?
+      rescue NoSuchKey
+        only_can_write bucket
+      end
 
       raise MissingContentLength unless env['CONTENT_LENGTH']
 
