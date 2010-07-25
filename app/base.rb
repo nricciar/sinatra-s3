@@ -183,8 +183,13 @@ module S3
       body ""
     end
 
-    # get slot
-    get %r{^/(.+?)/(.+)$} do
+    # get slot (head)
+    head %r{^/(.+?)/(.+)$} do
+      slot_head
+      body ""
+    end
+
+    def slot_head
       bucket = Bucket.find_root(params[:captures].first)
 
       h = {}
@@ -223,7 +228,11 @@ module S3
       end
       h['Content-Type'] ||= 'binary/octet-stream'
       h.merge!('ETag' => etag, 'Last-Modified' => @slot.updated_at.httpdate) if @revision_file.nil?
+    end
 
+    # get slot
+    get %r{^/(.+?)/(.+)$} do
+      slot_head
       acl_response_for(@slot) and return if params.has_key?('acl')
 
       if params.has_key?('version-id')
@@ -417,7 +426,7 @@ module S3
       end
 
       if env['HTTP_X_AMZ_COPY_SOURCE'].blank?
-	redirect_url = (params[:redirect] || params[:success_action_redirect])
+	redirect_url = (params[:success_action_redirect] || params[:redirect])
 	redirect redirect_url unless redirect_url.blank?
 	status params[:success_action_status].to_i if params[:success_action_status]
 	headers h
