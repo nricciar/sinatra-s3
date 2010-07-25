@@ -4,8 +4,8 @@ require 'rake/testtask'
 require 'rake/gempackagetask'
 
 spec = Gem::Specification.new do |s| 
-  s.name = "Sinatra-S3"
-  s.version = "0.0.1"
+  s.name = "sinatra-s3"
+  s.version = "0.9"
   s.author = "David Ricciardi"
   s.email = "nricciar@gmail.com"
   s.platform = Gem::Platform::RUBY

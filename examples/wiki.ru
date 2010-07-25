@@ -18,9 +18,11 @@ rescue S3::NoSuchBucket
         :email => "wiki@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),
         :activated_at => Time.now
   end
-  bucket = Bucket.create(:name => 'wiki', :owner_id => wiki_owner.id, :access => 438)
+  wiki_bucket = Bucket.create(:name => 'wiki', :owner_id => wiki_owner.id, :access => 438)
+  templates_bucket = Bucket.create(:name => 'templates', :owner_id => wiki_owner.id, :access => 438)
   if defined?(Git)
-    bucket.git_init
+    wiki_bucket.git_init
+    templates_bucket.git_init
   else
     puts "Git support not found therefore Wiki history is disabled."
   end
