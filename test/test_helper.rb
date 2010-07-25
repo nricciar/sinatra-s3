@@ -1,8 +1,8 @@
 require 'rubygems'
 require 'test/unit'
-require File.join(File.dirname(__FILE__), '..', 's3')
-require 'aws/s3'
 require 'rack/test'
+require 'aws/s3'
+require File.join(File.dirname(__FILE__), '..','lib','s3')
 
 admin = User.find_by_login('admin')
 

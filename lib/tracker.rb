@@ -9,7 +9,7 @@ module S3
   # All tracker errors are thrown as this class.
   class TrackerError < Exception; end
 
-  class S3Tracker < Sinatra::Base
+  class Tracker < Sinatra::Base
 
     helpers do
       include S3::AdminHelpers

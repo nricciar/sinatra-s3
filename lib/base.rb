@@ -7,7 +7,6 @@ module S3
   class Application < Sinatra::Base
 
     enable :static
-    set :public, File.join(File.dirname(__FILE__), '..', 'public')
     disable :raise_errors, :show_exceptions
     set :environment, :production
 
@@ -228,6 +227,7 @@ module S3
       end
       h['Content-Type'] ||= 'binary/octet-stream'
       h.merge!('ETag' => etag, 'Last-Modified' => @slot.updated_at.httpdate) if @revision_file.nil?
+      headers h
     end
 
     # get slot
@@ -236,7 +236,6 @@ module S3
       acl_response_for(@slot) and return if params.has_key?('acl')
 
       if params.has_key?('version-id')
-        headers h
 	body @revision_file
       elsif params.has_key?('torrent')
 	torrent @slot
@@ -265,10 +264,8 @@ module S3
       else
 	case @slot.obj
 	when FileInfo
-	  headers h
 	  body open(File.join(STORAGE_PATH, @slot.obj.path))
 	else
-	  headers h
 	  body @slot.obj
 	end
       end

@@ -2,7 +2,7 @@ require 'aws/s3'
 
 module S3
 
-  class S3Admin < Sinatra::Base
+  class Admin < Sinatra::Base
 
     helpers do
       include S3::Helpers

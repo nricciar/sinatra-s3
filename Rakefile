@@ -1,10 +1,32 @@
+$:.unshift "./lib"
 require 'rake'
 require 'rake/testtask'
+require 'rake/gempackagetask'
+
+spec = Gem::Specification.new do |s| 
+  s.name = "Sinatra-S3"
+  s.version = "0.0.1"
+  s.author = "David Ricciardi"
+  s.email = "nricciar@gmail.com"
+  s.platform = Gem::Platform::RUBY
+  s.summary = "An implementation of the Amazon S3 API in Ruby"
+  s.files = FileList["{bin,lib,public,db}/**/*"].to_a
+  s.require_path = "lib"
+  s.autorequire = "name"
+  s.test_files = FileList["{test}/*.rb"].to_a
+  s.has_rdoc = false
+  s.extra_rdoc_files = ["README"]
+  s.add_dependency("sinatra", ">= 1.0")
+end
+ 
+Rake::GemPackageTask.new(spec) do |pkg| 
+  pkg.need_tar = true 
+end 
 
 namespace :db do
   task :environment do
     require 'active_record'
-    require File.join(File.dirname(__FILE__), 's3')
+    require 's3'
     ActiveRecord::Base.establish_connection(S3.config[:db])
   end
 
@@ -16,8 +38,13 @@ namespace :db do
     num_users = User.count || 0
     if num_users == 0
       puts "** No users found, creating the `admin' user."
+      class S3KeyGen
+        include S3::Helpers
+        def secret() generate_secret(); end;
+        def key() generate_key(); end;
+      end
       User.create :login => "admin", :password => DEFAULT_PASSWORD,
-	:email => "admin@parkplace.net", :key => "44CF9590006BF252F707", :secret => DEFAULT_SECRET,
+	:email => "admin@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),
 	:activated_at => Time.now, :superuser => 1
     end
   end

@@ -1,3 +1,4 @@
+$:.unshift "./lib"
 require 's3'
 require 'wikicloth'
 
@@ -14,7 +15,7 @@ rescue S3::NoSuchBucket
       end
       puts "** No wiki user found, creating the `wiki' user."
       wiki_owner = User.create :login => "wiki", :password => DEFAULT_PASSWORD,
-        :email => "admin@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),
+        :email => "wiki@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),
         :activated_at => Time.now
   end
   bucket = Bucket.create(:name => 'wiki', :owner_id => wiki_owner.id, :access => 438)
@@ -203,5 +204,5 @@ class Wiki
 end
 
 use Wiki
-use S3::S3Admin
+use S3::Admin
 run S3::Application

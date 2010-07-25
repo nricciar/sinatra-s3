@@ -70,7 +70,7 @@ class S3ApiTest < Test::Unit::TestCase
     AWS::S3::Bucket.create(bucket_name, { :access => :public_read })
     bucket = AWS::S3::Bucket.find(bucket_name)
     policy = bucket.acl
-    assert policy.owner.id == '44CF9590006BF252F707'
+    assert policy.owner.id == User.find_by_login('admin').key
     assert policy.grants.include?(:public_read)
 
     AWS::S3::Bucket.delete(bucket_name, :force => true)

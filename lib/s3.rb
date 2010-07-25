@@ -29,12 +29,11 @@ rescue LoadError
 end
 
 DEFAULT_PASSWORD = 'pass@word1'
-DEFAULT_SECRET = 'OtxrzxIsfpFjA7SwPzILwy8Bw21TLhquhboDYROV'
 
 BUFSIZE = (4 * 1024)
-PUBLIC_PATH = File.join(File.expand_path(File.dirname(__FILE__)), 'public')
-STORAGE_PATH = File.join(File.expand_path(File.dirname(__FILE__)), 'storage') unless defined?(STORAGE_PATH)
-RESOURCE_TYPES = %w[acl versioning]
+PUBLIC_PATH = File.join(File.expand_path(File.dirname(__FILE__)), '..', 'public')
+STORAGE_PATH = File.join(File.expand_path(File.dirname(__FILE__)), '..', 'storage') unless defined?(STORAGE_PATH)
+RESOURCE_TYPES = %w[acl versioning torrent]
 CANNED_ACLS = {
   'private' => 0600,
   'public-read' => 0644,
@@ -50,5 +49,5 @@ WRITABLE_BY_AUTH = 0020
 POST = %{if(!this.title||confirm(this.title+'?')){var f = document.createElement('form'); this.parentNode.appendChild(f); f.method = 'POST'; f.action = this.href; f.submit();}return false;}
 POPUP = %{window.open(this.href,'changelog','height=600,width=500,scrollbars=1');return false;}
 
-%w(bit bucket git_bucket slot user file_info torrent torrent_peer).each {|r| require "#{File.dirname(__FILE__)}/app/models/#{r}" }
-%w(ext helpers errors admin base tracker).each {|r| require "#{File.dirname(__FILE__)}/app/#{r}"}
+%w(bit bucket git_bucket slot user file_info torrent torrent_peer).each {|r| require "#{File.dirname(__FILE__)}/models/#{r}" }
+%w(ext helpers errors admin base tracker).each {|r| require "#{File.dirname(__FILE__)}/#{r}"}
