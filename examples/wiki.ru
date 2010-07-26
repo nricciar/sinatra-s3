@@ -41,6 +41,11 @@ class CustomLinkHandler < WikiCloth::WikiLinkHandler
      { :href => url_for(page) }
   end
 
+  def external_link(url,text)
+    self.external_links << url
+    elem.a({ :href => url, :target => "_blank", :class => "exlink" }) { |x| x << (text.blank? ? url : text) }
+  end
+
   def include_resource(resource,options=[])
     if params[resource].nil?
       begin
@@ -82,11 +87,12 @@ class Wiki
       html.head do
         html.title title
         html.style "@import '/control/s/css/control.css';", :type => 'text/css'
+        html.style "@import '/control/s/css/wiki.css';", :type => 'text/css'
         html.style ".editsection { display:none }", :type => "text/css"
       end
       html.body do
         html.div :style => "text-align:left;padding:10px 0;width:700px;margin:0 auto" do
-          html.h1 { html.a SITE_NAME, :href => "/" }
+          html.h1 { html.a SITE_NAME, :href => "/", :id => "title" }
         end
         html.div :id => "page" do
           if @status <= 300
