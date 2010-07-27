@@ -163,19 +163,25 @@ end
 
 S3::Application.callback :when => 'before' do
   auth = Rack::Auth::Basic::Request.new(env)
+  next unless auth.provided? && auth.basic?
 
-  # Convert a valid basic authorization into a proper S3 AWS 
+  user = User.find_by_login(auth.credentials[0])
+  next if user.nil?
+
+  # Convert a valid basic authorization into a proper S3 AWS
   # Authorization header
-  if auth.provided? && auth.basic?
-    user = User.find_by_login(auth.credentials[0])
+  if user.password == hmac_sha1( auth.credentials[1], user.secret )
+    uri = env['PATH_INFO']
+    uri += "?" + env['QUERY_STRING'] if RESOURCE_TYPES.include?(env['QUERY_STRING'])
+    canonical = [env['REQUEST_METHOD'], env['HTTP_CONTENT_MD5'], env['CONTENT_TYPE'],
+      (env['HTTP_X_AMZ_DATE'] || env['HTTP_DATE']), uri]
+    env['HTTP_AUTHORIZATION'] = "AWS #{user.key}:" + hmac_sha1(user.secret, canonical.map{|v|v.to_s.strip} * "\n")
+  end
 
-    if user.password == hmac_sha1( auth.credentials[1], user.secret )
-      uri = env['PATH_INFO']
-      uri += "?" + env['QUERY_STRING'] if RESOURCE_TYPES.include?(env['QUERY_STRING'])
-      canonical = [env['REQUEST_METHOD'], env['HTTP_CONTENT_MD5'], env['CONTENT_TYPE'],
-        (env['HTTP_X_AMZ_DATE'] || env['HTTP_DATE']), uri]
-      env['HTTP_AUTHORIZATION'] = "AWS #{user.key}:" + hmac_sha1(user.secret, canonical.map{|v|v.to_s.strip} * "\n")
-    end
+  # fix some caching issues
+  if params.has_key?('edit') || params.has_key?('history')
+    env.delete('HTTP_IF_MODIFIED_SINCE')
+    env.delete('HTTP_IF_NONE_MATCH')
   end
 end
 
