@@ -235,9 +235,7 @@ module S3
       slot_head
       acl_response_for(@slot) and return if params.has_key?('acl')
 
-      if params.has_key?('version-id')
-	body @revision_file
-      elsif params.has_key?('torrent')
+      if params.has_key?('torrent')
 	torrent @slot
       elsif @slot.obj.kind_of?(FileInfo) && env['HTTP_RANGE'] =~ /^bytes=(\d+)?-(\d+)?$/ # yay, parse basic ranges
 	range_start = $1
@@ -264,7 +262,8 @@ module S3
       else
 	case @slot.obj
 	when FileInfo
-	  body open(File.join(STORAGE_PATH, @slot.obj.path))
+	  body params.has_key?('version-id') ? @revision_file : open(File.join(STORAGE_PATH, @slot.obj.path))
+          run_callback_for :mime_type => @slot.obj.mime_type
 	else
 	  body @slot.obj
 	end
@@ -480,7 +479,34 @@ module S3
 
       status request.env['sinatra.error'].status.nil? ? 500 : request.env['sinatra.error'].status
       content_type 'application/xml'
-      error.target!
+      body error.target!
+      run_callback_for :error => request.env['sinatra.error'].code
+    end
+
+    def self.callback(args = {}, &block)
+      @@callbacks ||= {}
+      if args[:mime_type]
+        @@callbacks[:mime_type] ||= {}
+        @@callbacks[:mime_type][args[:mime_type]] = block
+      elsif args[:error]
+        @@callbacks[:error] ||= {}
+        @@callbacks[:error][args[:error]] = block
+      end
+    end
+
+    protected
+    def run_callback_for(args = {})
+      @@callbacks ||= {}
+      block = nil
+
+      if args[:mime_type]
+        return if @@callbacks[:mime_type].nil?
+        block = @@callbacks[:mime_type][args[:mime_type]]
+      elsif args[:error]
+        return if @@callbacks[:error].nil?
+        block = @@callbacks[:error][args[:error]]
+      end
+      self.instance_eval(&block) unless block.nil?
     end
 
   end
