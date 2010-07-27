@@ -25,9 +25,9 @@ class Application < Sinatra::Base
             html.div :class => "menu" do
               html.ul do
                 rp = params
-                html.li { html.a "Content", :href => env['REQUEST_PATH'], :class => (!rp.has_key?('edit') && !rp.has_key?('history') ? "active" : "") }
-                html.li { html.a "Edit", :href => "#{env['REQUEST_PATH']}?edit", :class => (rp.has_key?('edit') ? "active" : "") }
-                html.li { html.a "History", :href => "#{env['REQUEST_PATH']}?history", :class => (rp.has_key?('history') ? "active" : "") } if defined?(Git)
+                html.li { html.a "Content", :href => env['PATH_INFO'], :class => (!rp.has_key?('edit') && !rp.has_key?('history') ? "active" : "") }
+                html.li { html.a "Edit", :href => "#{env['PATH_INFO']}?edit", :class => (rp.has_key?('edit') ? "active" : "") }
+                html.li { html.a "History", :href => "#{env['PATH_INFO']}?history", :class => (rp.has_key?('history') ? "active" : "") } if defined?(Git)
               end
             end
           end
@@ -45,8 +45,8 @@ class Application < Sinatra::Base
   def edit_page
     wiki_layout("Edit Page") do |html|
       html.h2 "Edit Page"
-      html.form :class => "create", :action => env['REQUEST_PATH'], :method => "POST" do
-        html.input :type => "hidden", :name => "redirect", :value => env['REQUEST_PATH']
+      html.form :class => "create", :action => env['PATH_INFO'], :method => "POST" do
+        html.input :type => "hidden", :name => "redirect", :value => env['PATH_INFO']
         html.input :type => "hidden", :name => "Content-Type", :value => "text/wiki"
         html.div :class => "required" do
            page_contents = status >= 300 ? "" : (response.body.respond_to?(:read) ? response.body.read : response.body.to_s)
@@ -112,14 +112,14 @@ S3::Application.callback :mime_type => 'text/wiki' do
   elsif params.has_key?('history')
     wiki_layout("Page History") do |html|
       html.h2 "Edit History"
-      if env['REQUEST_PATH'] =~ /^\/(.+?)\/(.+)$/
+      if env['PATH_INFO'] =~ /^\/(.+?)\/(.+)$/
         bucket = Bucket.find_root($1)
         revisions = Slot.find(:all, :conditions => [ 'name = ?', $2 ], :order => "id DESC")
         html.ul do
           revisions.each do |rev|
             html.li do
               html.p do
-                html.a rev.meta['comment'], :href => "#{env['REQUEST_PATH']}?version-id=#{rev.version}"
+                html.a rev.meta['comment'], :href => "#{env['PATH_INFO']}?version-id=#{rev.version}"
                 html << " on #{rev.updated_at}"
               end
             end
@@ -153,7 +153,7 @@ S3::Application.callback :error => 'NoSuchKey' do
 end
 
 S3::Application.callback :error => 'AccessDenied' do
-  if env['REQUEST_PATH'].nil? || env['REQUEST_PATH'] == '/'
+  if env['PATH_INFO'].nil? || env['PATH_INFO'] == '/'
     redirect '/wiki/Main_Page'
   else
     status 401
@@ -163,6 +163,7 @@ S3::Application.callback :error => 'AccessDenied' do
 end
 
 S3::Application.callback :when => 'before' do
+puts env.inspect
   auth ||= Rack::Auth::Basic::Request.new(request.env)
   if auth.provided? && auth.basic?
     user = User.find_by_login(auth.credentials[0])
