@@ -200,6 +200,13 @@ module S3
       profile_view
     end
 
+    post "/control/profile/?" do
+      login_required
+      @user.update_attributes(params['user'])
+      @usero = @user
+      profile_view
+    end
+
     get "/control/users/?" do
       login_required
       only_superusers
@@ -341,7 +348,7 @@ module S3
 		html.div :class => "menu" do
 		  html.ul do
 		    html.li { html.a 'buckets', :href => "/control/buckets" }
-		    html.li { html.a 'users', :href => "/control/users" }
+		    html.li { html.a 'users', :href => "/control/users" } if @user.superuser?
 		    html.li { html.a 'profile', :href => "/control/profile" }
 		    html.li { html.a 'logout', :href => "/control/logout" }
 		  end
