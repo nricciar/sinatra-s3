@@ -36,7 +36,6 @@ class Application < Sinatra::Base
         end
       end
     end
-    status = 200
     headers['Content-Type'] = 'text/html'
     headers['Content-Length'] = html.target!.length.to_s
     html.target!
@@ -112,23 +111,20 @@ S3::Application.callback :mime_type => 'text/wiki' do
   elsif params.has_key?('history')
     wiki_layout("Page History") do |html|
       html.h2 "Edit History"
-      if env['PATH_INFO'] =~ /^\/(.+?)\/(.+)$/
-        bucket = Bucket.find_root($1)
-        revisions = Slot.find(:all, :conditions => [ 'name = ?', $2 ], :order => "id DESC")
-        html.ul do
-          revisions.each do |rev|
-            html.li do
-              html.p do
-                html.a rev.meta['comment'], :href => "#{env['PATH_INFO']}?version-id=#{rev.version}"
-                html << " on #{rev.updated_at}"
-              end
+      html.ul do
+        revisions = Slot.find(:all, :conditions => [ 'name = ?', @slot.name ], :order => "id DESC")
+        revisions.each do |rev|
+          html.li do
+            html.p do
+              html.a rev.meta['comment'], :href => "#{env['PATH_INFO']}?version-id=#{rev.version}"
+              html << " on #{rev.updated_at}"
             end
           end
         end
       end
     end
   else
-    wiki_layout(" ") do |html|
+    wiki_layout(@slot.name.gsub(/_/,' ')) do |html|
       p = {}
       headers.each { |k,v| p[$1.upcase.gsub(/\-/,'_')] = v if k =~ /x-amz-(.*)/ }
       wiki_page = WikiCloth::WikiCloth.new({
@@ -158,22 +154,27 @@ S3::Application.callback :error => 'AccessDenied' do
   else
     status 401
     headers["WWW-Authenticate"] = %(Basic realm="wiki")
-    body "Access Denied"
+    wiki_layout("Access Denied") do |html|
+      html.h2 "Access Denied"
+      html.p "You are not authorized to access the specified resource."
+    end
   end
 end
 
 S3::Application.callback :when => 'before' do
-  auth ||= Rack::Auth::Basic::Request.new(request.env)
+  auth = Rack::Auth::Basic::Request.new(env)
+
+  # Convert a valid basic authorization into a proper S3 AWS 
+  # Authorization header
   if auth.provided? && auth.basic?
     user = User.find_by_login(auth.credentials[0])
+
     if user.password == hmac_sha1( auth.credentials[1], user.secret )
-      date_s = env['HTTP_X_AMZ_DATE'] || env['HTTP_DATE']
       uri = env['PATH_INFO']
       uri += "?" + env['QUERY_STRING'] if RESOURCE_TYPES.include?(env['QUERY_STRING'])
       canonical = [env['REQUEST_METHOD'], env['HTTP_CONTENT_MD5'], env['CONTENT_TYPE'],
-        date_s, uri]
-      secret_s = hmac_sha1(user.secret, canonical.map{|v|v.to_s.strip} * "\n")
-      env['HTTP_AUTHORIZATION'] = "AWS #{user.key}:#{secret_s}"
+        (env['HTTP_X_AMZ_DATE'] || env['HTTP_DATE']), uri]
+      env['HTTP_AUTHORIZATION'] = "AWS #{user.key}:" + hmac_sha1(user.secret, canonical.map{|v|v.to_s.strip} * "\n")
     end
   end
 end
