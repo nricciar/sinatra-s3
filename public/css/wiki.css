@@ -17,7 +17,7 @@ text-align:center;
   padding-top:0.5em;
   color:#000;
 }
-#page h2, #page h1 { border-bottom:1px solid #AAAAAA; }
+#page h1 { border-bottom:1px solid #AAAAAA; }
 .editsection {
 font-size:76%;
 font-weight:normal;

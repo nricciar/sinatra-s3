@@ -20,7 +20,6 @@ module S3
     end
 
     before do
-      ActiveRecord::Base.verify_active_connections!
       run_callback_for :when => 'before'
 
       @meta, @amz = {}, {}
@@ -53,8 +52,12 @@ module S3
     end
 
     def call(env)
-      return if env['PATH_INFO'] =~ /^\/control/
-      super(env)
+      begin
+        return if env['PATH_INFO'] =~ /^\/control/
+        super(env)
+      ensure
+	ActiveRecord::Base.connection_pool.release_connection
+      end
     end
 
     get '/' do
