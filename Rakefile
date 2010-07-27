@@ -18,10 +18,40 @@ spec = Gem::Specification.new do |s|
   s.extra_rdoc_files = ["README"]
   s.add_dependency("sinatra", ">= 1.0")
 end
- 
+
 Rake::GemPackageTask.new(spec) do |pkg| 
   pkg.need_tar = true 
 end 
+
+namespace :setup do
+  task :wiki do
+    require 's3'
+    begin
+      Bucket.find_root('wiki')
+    rescue S3::NoSuchBucket
+      wiki_owner = User.find_by_login('wiki')
+      if wiki_owner.nil?
+	class S3KeyGen
+	  include S3::Helpers
+	  def secret() generate_secret(); end;
+	  def key() generate_key(); end;
+	end
+	puts "** No wiki user found, creating the `wiki' user."
+	wiki_owner = User.create :login => "wiki", :password => DEFAULT_PASSWORD,
+	  :email => "wiki@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),
+	  :activated_at => Time.now
+      end
+      wiki_bucket = Bucket.create(:name => 'wiki', :owner_id => wiki_owner.id, :access => 438)
+      templates_bucket = Bucket.create(:name => 'templates', :owner_id => wiki_owner.id, :access => 438)
+      if defined?(Git)
+	wiki_bucket.git_init
+	templates_bucket.git_init
+      else
+	puts "Git support not found therefore Wiki history is disabled."
+      end
+    end
+  end
+end
 
 namespace :db do
   task :environment do
@@ -39,9 +69,9 @@ namespace :db do
     if num_users == 0
       puts "** No users found, creating the `admin' user."
       class S3KeyGen
-        include S3::Helpers
-        def secret() generate_secret(); end;
-        def key() generate_key(); end;
+	include S3::Helpers
+	def secret() generate_secret(); end;
+	def key() generate_key(); end;
       end
       User.create :login => "admin", :password => DEFAULT_PASSWORD,
 	:email => "admin@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),

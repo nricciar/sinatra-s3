@@ -21,6 +21,7 @@ module S3
 
     before do
       ActiveRecord::Base.verify_active_connections!
+      run_callback_for :when => 'before'
 
       @meta, @amz = {}, {}
       @env.each do |k,v|
@@ -491,6 +492,9 @@ module S3
       elsif args[:error]
         @@callbacks[:error] ||= {}
         @@callbacks[:error][args[:error]] = block
+      elsif args[:when]
+	@@callbacks[:when] ||= {}
+	@@callbacks[:when][args[:when]] = block
       end
     end
 
@@ -505,7 +509,11 @@ module S3
       elsif args[:error]
         return if @@callbacks[:error].nil?
         block = @@callbacks[:error][args[:error]]
+      elsif args[:when]
+	return if @@callbacks[:when].nil?
+	block = @@callbacks[:when][args[:when]]
       end
+
       self.instance_eval(&block) unless block.nil?
     end
 

@@ -2,32 +2,6 @@ $:.unshift "./lib"
 require 's3'
 require 'wikicloth'
 
-# Initial setup
-begin
-  Bucket.find_root('wiki')
-rescue S3::NoSuchBucket
-  wiki_owner = User.find_by_login('wiki')
-  if wiki_owner.nil?
-     class S3KeyGen
-       include S3::Helpers
-       def secret() generate_secret(); end;
-       def key() generate_key(); end;
-      end
-      puts "** No wiki user found, creating the `wiki' user."
-      wiki_owner = User.create :login => "wiki", :password => DEFAULT_PASSWORD,
-        :email => "wiki@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),
-        :activated_at => Time.now
-  end
-  wiki_bucket = Bucket.create(:name => 'wiki', :owner_id => wiki_owner.id, :access => 438)
-  templates_bucket = Bucket.create(:name => 'templates', :owner_id => wiki_owner.id, :access => 438)
-  if defined?(Git)
-    wiki_bucket.git_init
-    templates_bucket.git_init
-  else
-    puts "Git support not found therefore Wiki history is disabled."
-  end
-end
-
 module S3
 class Application < Sinatra::Base
 
@@ -157,13 +131,11 @@ S3::Application.callback :mime_type => 'text/wiki' do
     wiki_layout(" ") do |html|
       p = {}
       headers.each { |k,v| p[$1.upcase.gsub(/\-/,'_')] = v if k =~ /x-amz-(.*)/ }
-
       wiki_page = WikiCloth::WikiCloth.new({
         :data => response.body.respond_to?(:read) ? response.body.read : response.body.to_s,
         :link_handler => CustomLinkHandler.new,
         :params => p
       })
-
       html << wiki_page.to_html
     end
   end
@@ -181,7 +153,29 @@ S3::Application.callback :error => 'NoSuchKey' do
 end
 
 S3::Application.callback :error => 'AccessDenied' do
-  redirect '/wiki/Main_Page' if env['REQUEST_PATH'].nil? || env['REQUEST_PATH'] == '/'
+  if env['REQUEST_PATH'].nil? || env['REQUEST_PATH'] == '/'
+    redirect '/wiki/Main_Page'
+  else
+    status 401
+    headers["WWW-Authenticate"] = %(Basic realm="wiki")
+    body "Access Denied"
+  end
+end
+
+S3::Application.callback :when => 'before' do
+  auth ||= Rack::Auth::Basic::Request.new(request.env)
+  if auth.provided? && auth.basic?
+    user = User.find_by_login(auth.credentials[0])
+    if user.password == hmac_sha1( auth.credentials[1], user.secret )
+      date_s = env['HTTP_X_AMZ_DATE'] || env['HTTP_DATE']
+      uri = env['PATH_INFO']
+      uri += "?" + env['QUERY_STRING'] if RESOURCE_TYPES.include?(env['QUERY_STRING'])
+      canonical = [env['REQUEST_METHOD'], env['HTTP_CONTENT_MD5'], env['CONTENT_TYPE'],
+        date_s, uri]
+      secret_s = hmac_sha1(user.secret, canonical.map{|v|v.to_s.strip} * "\n")
+      env['HTTP_AUTHORIZATION'] = "AWS #{user.key}:#{secret_s}"
+    end
+  end
 end
 
 use S3::Tracker if defined?(RubyTorrent)
