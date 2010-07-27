@@ -85,7 +85,13 @@ module S3
           end
           {}
         else
-          {:access => CANNED_ACLS[@amz['acl']] || (slot.nil? || slot.parent.nil? ? CANNED_ACLS['private'] : slot.parent.access)}
+	  if @amz['acl'].nil?
+	    access = slot.access unless slot.nil?
+	    access ||= slot.parent.access unless slot.nil? || slot.parent.nil?
+	  else
+	    access = CANNED_ACLS[@amz['acl']]
+	  end
+	  { :access => access.nil? ? CANNED_ACLS['private'] : access }
         end
       end
 
