@@ -53,7 +53,7 @@ module S3
     end
 
     def call(env)
-      return if env['REQUEST_PATH'] =~ /^\/control/
+      return if env['PATH_INFO'] =~ /^\/control/
       super(env)
     end
 

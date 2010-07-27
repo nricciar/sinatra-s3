@@ -31,7 +31,7 @@ class Application < Sinatra::Base
               end
             end
           end
-          html.h1 env['REQUEST_PATH'] =~ /\/([^\/]+)$/ ? "#{$1.gsub('_',' ')}" : "Sinatra-S3 Wiki"
+          html.h1 env['PATH_INFO'] =~ /\/([^\/]+)$/ ? "#{$1.gsub('_',' ')}" : "Sinatra-S3 Wiki"
           yield html
         end
       end
@@ -147,7 +147,7 @@ S3::Application.callback :error => 'NoSuchKey' do
   else
     wiki_layout("Page Does Not Exist") do |html|
       html.h2 "Page Does Not Exist"
-      html.p { html << "The page you were trying to access does not exist.  Perhaps you would like to <a href=\"#{env['REQUEST_PATH']}?edit\">create it</a>?" }
+      html.p { html << "The page you were trying to access does not exist.  Perhaps you would like to <a href=\"#{env['PATH_INFO']}?edit\">create it</a>?" }
     end
   end
 end
@@ -163,7 +163,6 @@ S3::Application.callback :error => 'AccessDenied' do
 end
 
 S3::Application.callback :when => 'before' do
-puts env.inspect
   auth ||= Rack::Auth::Basic::Request.new(request.env)
   if auth.provided? && auth.basic?
     user = User.find_by_login(auth.credentials[0])
