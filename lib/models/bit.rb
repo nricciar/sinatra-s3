@@ -32,6 +32,21 @@ class Bit < ActiveRecord::Base
     git_repository.log.path(File.basename(self.obj.path)).first if versioning_enabled? && self.obj
   end
 
+  def objectish
+    git_repository.gcommit(version).gtree.blobs[File.basename(fullpath)].objectish
+  end
+
+  def diff(to)
+    to = Bit.find_by_version(to) if to.instance_of?(String)
+    git_repository.diff(objectish, to.objectish)
+  end
+
+  def self.diff(from,to)
+    from = Bit.find_by_version(from)
+    to = Bit.find_by_version(to)
+    from.git_repository.diff(from.objectish, to.objectish)
+  end
+
   def acl_list
     bit_perms = self.access.nil? ? "000" : self.access.to_s(8)
     acls = { :owner => { :id => self.owner.key, :accessnum => 7, :type => "CanonicalUser", :name => self.owner.login, :access => "FULL_ACCESS" },

@@ -42,8 +42,8 @@ class Application < Sinatra::Base
   end
 
   def edit_page
-    wiki_layout("Edit Page") do |html|
-      html.h2 "Edit Page"
+    wiki_layout(@slot.nil? ? "Edit Page" : "Editing #{@slot.name.gsub(/_/,' ')}") do |html|
+      html.h2 @slot.nil? ? "Edit Page" : "Editing #{@slot.name.gsub(/_/,' ')}"
       html.form :class => "create", :action => env['PATH_INFO'], :method => "POST" do
         html.input :type => "hidden", :name => "redirect", :value => env['PATH_INFO']
         html.input :type => "hidden", :name => "Content-Type", :value => "text/wiki"
@@ -108,19 +108,31 @@ end
 S3::Application.callback :mime_type => 'text/wiki' do
   if params.has_key?('edit')
     edit_page
+  elsif params.has_key?('diff')
+    diff = Bit.diff(params[:from], params[:to])
+    wiki_layout("Changes to #{@slot.name.gsub(/_/,' ')}") do |html|
+      html.p "#{diff.stats[:total][:insertions]} insertions and #{diff.stats[:total][:deletions]} deletions"
+      html.pre { html << diff.patch.gsub('<','&lt;').gsub('>','&gt;') }
+    end
   elsif params.has_key?('history')
-    wiki_layout("Page History") do |html|
-      html.h2 "Edit History"
-      html.ul do
-        revisions = Slot.find(:all, :conditions => [ 'name = ?', @slot.name ], :order => "id DESC")
-        revisions.each do |rev|
-          html.li do
-            html.p do
-              html.a rev.meta['comment'], :href => "#{env['PATH_INFO']}?version-id=#{rev.version}"
-              html << " on #{rev.updated_at}"
+    wiki_layout("Revision history of #{@slot.name.gsub(/_/,' ')}") do |html|
+      html.h2 "Revision history of #{@slot.name.gsub(/_/,' ')}"
+      html.form :action => env['PATH_INFO'], :method => "GET" do
+        html.input :type => "hidden", :name => "diff", :value => ""
+        html.table :id => "revision_history" do
+          revisions = Slot.find(:all, :conditions => [ 'name = ? AND parent_id = ?', @slot.name, @slot.parent_id ], :order => "id DESC")
+          revisions.each_with_index do |rev, count|
+            html.tr do
+              html.td(:class => "check") { html << "<input type=\"radio\" name=\"from\" value=\"#{rev.version}\"" + (count == 1 ? ' checked="checked"' : '') + " />" unless count == 0 }
+              html.td(:class => "check") { html << "<input type=\"radio\" name=\"to\" value=\"#{rev.version}\"" + (count == 0 ? ' checked="checked"' : '') + " />" }
+              html.td { 
+                html.a rev.meta['comment'], :href => "#{env['PATH_INFO']}?version-id=#{rev.version}"
+                html << " on #{rev.updated_at}"
+              }
             end
           end
         end
+        html.input :type => "submit", :value => "Compare Revisions"
       end
     end
   else
