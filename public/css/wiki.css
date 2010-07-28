@@ -23,6 +23,7 @@ font-size:76%;
 font-weight:normal;
 }
 .editsection {
+display:none;
 float:right;
 margin-left:5px;
 }
