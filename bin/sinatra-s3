@@ -7,25 +7,24 @@ if ARGV.any? { |arg| %w(--version -v).any? { |flag| arg == flag } }
   exit 0
 end
 
-if ARGV.any? { |arg| %w(--migrate migrate).any? { |flag| arg == flag } }
-  ActiveRecord::Base.logger = Logger.new(STDOUT)
-  ActiveRecord::Migration.verbose = true
+app_path = ARGV.last
+install_success = false
 
-  out_dir = File.dirname(S3.config[:db][:database])
-  FileUtils.mkdir_p(out_dir) unless File.exists?(out_dir)
+unless File.exists?(app_path)
+  FileUtils.mkdir_p(app_path)
 
-  ActiveRecord::Migrator.migrate(File.join(S3::ROOT_DIR, 'db', 'migrate'))
-  num_users = User.count || 0
-  if num_users == 0
-    puts "** No users found, creating the `admin' user."
-    class S3KeyGen
-      include S3::Helpers
-      def secret() generate_secret(); end;
-      def key() generate_key(); end;
-    end
-    User.create :login => "admin", :password => S3::DEFAULT_PASSWORD,
-      :email => "admin@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),
-      :activated_at => Time.now, :superuser => 1
+  config_ru = "require 'rubygems'\nrequire 'sinatra-s3'"
+  if ARGV.any? { |arg| %w(--include-wiki --wiki).any? { |flag| arg == flag } }
+    FileUtils.copy(File.join(S3::ROOT_DIR,"examples","wiki.rb"), File.join(app_path,"wiki.rb"))
+    config_ru += "\nrequire 'wiki'"
   end
-  exit 0
+  config_ru += "\n\nuse S3::Tracker if defined?(RubyTorrent)\nuse S3::Admin\nrun S3::Application"
+  File.open(File.join(app_path,"config.ru"),"w") { |f| f.write(config_ru) }
+
+  File.open(File.join(app_path,"Rakefile"),"w") { |f| f.write("require 'sinatra-s3/tasks'") }
+  FileUtils.copy(File.join(S3::ROOT_DIR,"s3.yml.example"), File.join(app_path,"s3.yml"))
+
+  puts "Sinatra-S3 installed in #{app_path}."
+else
+  puts "Unable to install Sinatra-S3.  Install dir already exists."
 end

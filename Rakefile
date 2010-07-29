@@ -3,6 +3,7 @@ require 'rake'
 require 'rake/testtask'
 require 'rake/gempackagetask'
 require 'sinatra-s3'
+require 'sinatra-s3/tasks'
 
 spec = Gem::Specification.new do |s| 
   s.name = "sinatra-s3"
@@ -12,9 +13,9 @@ spec = Gem::Specification.new do |s|
   s.homepage = "http://github.com/nricciar/sinatra-s3"
   s.platform = Gem::Platform::RUBY
   s.summary = "An implementation of the Amazon S3 API in Ruby"
-  s.files = FileList["{bin,lib,public}/**/*"].to_a +
+  s.files = FileList["{bin,lib,public,examples}/**/*"].to_a +
     FileList["db/migrate/*"].to_a +
-    ["Rakefile"]
+    ["Rakefile","s3.yml.example"]
   s.require_path = "lib"
   s.executables = ['sinatra-s3']
   s.test_files = FileList["{test}/*.rb"].to_a
@@ -28,62 +29,6 @@ end
 Rake::GemPackageTask.new(spec) do |pkg| 
   pkg.need_tar = true 
 end 
-
-namespace :setup do
-  task :wiki do
-    begin
-      Bucket.find_root('wiki')
-    rescue S3::NoSuchBucket
-      wiki_owner = User.find_by_login('wiki')
-      if wiki_owner.nil?
-	class S3KeyGen
-	  include S3::Helpers
-	  def secret() generate_secret(); end;
-	  def key() generate_key(); end;
-	end
-	puts "** No wiki user found, creating the `wiki' user."
-	wiki_owner = User.create :login => "wiki", :password => S3::DEFAULT_PASSWORD,
-	  :email => "wiki@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),
-	  :activated_at => Time.now
-      end
-      wiki_bucket = Bucket.create(:name => 'wiki', :owner_id => wiki_owner.id, :access => 438)
-      templates_bucket = Bucket.create(:name => 'templates', :owner_id => wiki_owner.id, :access => 438)
-      if defined?(Git)
-	wiki_bucket.git_init
-	templates_bucket.git_init
-      else
-	puts "Git support not found therefore Wiki history is disabled."
-      end
-    end
-  end
-end
-
-namespace :db do
-  task :environment do
-    require 'active_record'
-    require 's3'
-    ActiveRecord::Base.establish_connection(S3.config[:db])
-  end
-
-  desc "Migrate the database"
-  task(:migrate => :environment) do
-    ActiveRecord::Base.logger = Logger.new(STDOUT)
-    ActiveRecord::Migration.verbose = true
-    ActiveRecord::Migrator.migrate("db/migrate")
-    num_users = User.count || 0
-    if num_users == 0
-      puts "** No users found, creating the `admin' user."
-      class S3KeyGen
-	include S3::Helpers
-	def secret() generate_secret(); end;
-	def key() generate_key(); end;
-      end
-      User.create :login => "admin", :password => S3::DEFAULT_PASSWORD,
-	:email => "admin@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),
-	:activated_at => Time.now, :superuser => 1
-    end
-  end
-end
 
 namespace :test do
   find_file = lambda do |name|
