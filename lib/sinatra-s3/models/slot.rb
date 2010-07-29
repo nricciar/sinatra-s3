@@ -3,7 +3,7 @@ class Slot < Bit
   named_scope :bucket, lambda { |bucket| { :conditions => [ 'bits.deleted = 0 AND parent_id = ?', bucket.id ], :order => "name" } }
   named_scope :items, lambda { |marker,prefix| { :conditions => condition_string(marker,prefix) } }
 
-  def fullpath; File.join(STORAGE_PATH, obj.path) end
+  def fullpath; File.join(S3::STORAGE_PATH, obj.path) end
 
   def etag
     if self.obj.respond_to? :etag

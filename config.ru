@@ -1,5 +1,5 @@
 $:.unshift "./lib"
-require 's3'
+require 'sinatra-s3'
 
 use S3::Tracker if defined?(RubyTorrent)
 use S3::Admin

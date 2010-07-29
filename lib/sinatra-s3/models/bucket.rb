@@ -16,7 +16,7 @@ class Bucket < Bit
   end
 
   def remove_from_filesystem
-    bucket_dir = File.join(STORAGE_PATH, self.name)
+    bucket_dir = File.join(S3::STORAGE_PATH, self.name)
     FileUtils.rm_rf bucket_dir if File.directory?(bucket_dir) && Dir.empty?(bucket_dir)
   end
 

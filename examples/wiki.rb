@@ -1,4 +1,4 @@
-require 's3'
+require 'sinatra-s3'
 require 'wikicloth'
 
 S3::Application.callback :mime_type => 'text/wiki' do
@@ -46,6 +46,12 @@ S3::Application.callback :error => 'AccessDenied' do
 end
 
 S3::Application.callback :when => 'before' do
+  #fix some caching issues
+  if params.has_key?('edit') || params.has_key?('history') || params.has_key?('diff')
+    env.delete('HTTP_IF_MODIFIED_SINCE')
+    env.delete('HTTP_IF_NONE_MATCH')
+  end
+
   auth = Rack::Auth::Basic::Request.new(env)
   next unless auth.provided? && auth.basic?
 
@@ -56,16 +62,10 @@ S3::Application.callback :when => 'before' do
   # Authorization header
   if user.password == hmac_sha1( auth.credentials[1], user.secret )
     uri = env['PATH_INFO']
-    uri += "?" + env['QUERY_STRING'] if RESOURCE_TYPES.include?(env['QUERY_STRING'])
+    uri += "?" + env['QUERY_STRING'] if S3::RESOURCE_TYPES.include?(env['QUERY_STRING'])
     canonical = [env['REQUEST_METHOD'], env['HTTP_CONTENT_MD5'], env['CONTENT_TYPE'],
       (env['HTTP_X_AMZ_DATE'] || env['HTTP_DATE']), uri]
     env['HTTP_AUTHORIZATION'] = "AWS #{user.key}:" + hmac_sha1(user.secret, canonical.map{|v|v.to_s.strip} * "\n")
-  end
-
-  # fix some caching issues
-  if params.has_key?('edit') || params.has_key?('history') || params.has_key?('diff')
-    env.delete('HTTP_IF_MODIFIED_SINCE')
-    env.delete('HTTP_IF_NONE_MATCH')
   end
 end
 
@@ -91,7 +91,7 @@ class CustomLinkHandler < WikiCloth::WikiLinkHandler
         bucket = Bucket.find_root('templates')
         slot = bucket.find_slot(resource)
         unless slot.nil?
-          file = open(File.join(STORAGE_PATH, slot.obj.path))
+          file = open(File.join(S3::STORAGE_PATH, slot.obj.path))
           wiki_page = WikiCloth::WikiCloth.new({
             :data => file.instance_of?(File) ? file.read : file.to_s,
             :link_handler => self,

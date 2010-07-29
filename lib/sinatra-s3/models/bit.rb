@@ -16,7 +16,7 @@ class Bit < ActiveRecord::Base
     versioning_enabled? ? Git.open(git_repository_path) : nil
   end
 
-  def fullpath; File.join(STORAGE_PATH, name) end
+  def fullpath; File.join(S3::STORAGE_PATH, name) end
 
   def git_repository_path
     self.obj ? File.join(File.dirname(self.fullpath)) : self.fullpath
@@ -83,7 +83,7 @@ class Bit < ActiveRecord::Base
   end
 
   def access_readable
-    name, _ = CANNED_ACLS.find { |k, v| v == self.access }
+    name, _ = S3::CANNED_ACLS.find { |k, v| v == self.access }
     if name
       name
     else
@@ -119,12 +119,12 @@ class Bit < ActiveRecord::Base
 
   def readable_by? user
     return true if user && acl_list[user.key] && acl_list[user.key][:accessnum].to_i >= 4
-    check_access(user, READABLE_BY_AUTH, READABLE)
+    check_access(user, S3::READABLE_BY_AUTH, S3::READABLE)
   end
 
   def writable_by? user
     return true if user && acl_list[user.key] && acl_list[user.key][:accessnum].to_i >= 6
-    check_access(user, WRITABLE_BY_AUTH, WRITABLE)
+    check_access(user, S3::WRITABLE_BY_AUTH, S3::WRITABLE)
   end
 
   def check_access user, group_perm, user_perm

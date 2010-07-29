@@ -395,7 +395,7 @@ __END__
           %td #{bucket.updated_at}
           %td #{bucket.access_readable + (bucket.versioning_enabled? ? ",versioned" : "")}
           %td
-            %a{ :href => "/control/delete/#{bucket.name}", :onClick => POST, :title => "Delete Bucket #{bucket.name}" } Delete
+            %a{ :href => "/control/delete/#{bucket.name}", :onClick => S3::POST, :title => "Delete Bucket #{bucket.name}" } Delete
 - else
   %p A sad day. You have no buckets yet.
 %h3 Create a Bucket
@@ -408,7 +408,7 @@ __END__
   %div.required
     %label{ :for => "bucket[access]" } Permissions
     %select{ :name => "bucket[access]" }
-      - CANNED_ACLS.sort.each do |acl,perm|
+      - S3::CANNED_ACLS.sort.each do |acl,perm|
         - opts = { :value => perm }
         - opts[:selected] = true if perm == @bucket.access
         %option{ opts } #{acl}
@@ -421,7 +421,7 @@ __END__
     - if defined?(Git)
       %span{ :style => "float:right" }
         - if !@bucket.versioning_enabled?
-          %a{ :href => "/control/buckets/#{@bucket.name}/versioning", :onClick => POST } Enable Versioning For This Bucket
+          %a{ :href => "/control/buckets/#{@bucket.name}/versioning", :onClick => S3::POST } Enable Versioning For This Bucket
         - else
           Versioning Enabled
     %a{ :href => "/control/buckets" } &larr; Buckets
@@ -447,17 +447,17 @@ __END__
             %p
               %a{ :href => signed_url("/#{@bucket.name}/#{file.name}"), :target => "_blank" } Get
               &bull;
-              %a{ :href => "/control/acl/#{@bucket.name}/#{file.name}", :onclick => POPUP } Access
+              %a{ :href => "/control/acl/#{@bucket.name}/#{file.name}", :onclick => S3::POPUP } Access
               &bull;
-              %a{ :href => "/control/meta/#{@bucket.name}/#{file.name}", :onclick => POPUP } Meta
+              %a{ :href => "/control/meta/#{@bucket.name}/#{file.name}", :onclick => S3::POPUP } Meta
               &bull;
               - if @bucket.versioning_enabled?
-                %a{ :href => "/control/changes/#{@bucket.name}/#{file.name}", :onclick => POPUP } Changes
+                %a{ :href => "/control/changes/#{@bucket.name}/#{file.name}", :onclick => S3::POPUP } Changes
                 &bull;
               - if defined?(RubyTorrent)
                 %a{ :href => signed_url("/#{@bucket.name}/#{file.name}") + "&torrent", :target => "_blank" } Torrent
                 &bull;
-              %a{ :href => "/control/delete/#{@bucket.name}/#{file.name}", :onclick => POST, :title => "Delete file #{file.name}" } Delete
+              %a{ :href => "/control/delete/#{@bucket.name}/#{file.name}", :onclick => S3::POST, :title => "Delete file #{file.name}" } Delete
         %td #{number_to_human_size(file.size)}
         %td #{file.access_readable}
 %div#results
@@ -476,7 +476,7 @@ __END__
   %div.required
     %label{ :for => "facl" } Permissions
     %select{ :name => "facl" }
-      - CANNED_ACLS.sort.each do |acl, perm|
+      - S3::CANNED_ACLS.sort.each do |acl, perm|
         - opts = { :value => perm }
         - opts[:selected] = true if perm == @bucket.access
         %option{ opts } #{acl}
@@ -498,7 +498,7 @@ __END__
         %td #{user.activated_at}
         %td #{number_to_human_size(Bit.sum(:size, :conditions => [ 'owner_id = ?', user.id ]))}
         %td
-          %a{ :href => "/control/users/delete/#{user.login}", :onclick => POST, :title => "Delete user #{user.login}" } Delete
+          %a{ :href => "/control/users/delete/#{user.login}", :onclick => S3::POST, :title => "Delete user #{user.login}" } Delete
 %h3 Create a User
 %form.create{ :action => "/control/users", :method => "post" }
   = preserve errors_for(@usero)
@@ -559,7 +559,8 @@ __END__
         %th Value
     %tbody
       - if @slot.meta.empty?
-        %tr{ :colspan => "2", :style => "padding:8px;text-align:center" } No Metadata for #{@slot.name}
+        %tr
+          %td{ :colspan => "2", :style => "padding:8px;text-align:center" } No Metadata for #{@slot.name}
       - else
         - @slot.meta.each do |k,v|
           %tr
@@ -568,7 +569,7 @@ __END__
               %input{ :name => "m[#{k}]", :type => "text", :value => v, :style => "width:100%" }
     %thead
       %tr
-        %th{ :colspan => "2" } "New Key"
+        %th{ :colspan => "2" } New Key
     %tbody
       %tr
         %td

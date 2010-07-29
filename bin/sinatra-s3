@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'sinatra-s3'
+
+if ARGV.any? { |arg| %w(--version -v).any? { |flag| arg == flag } }
+  puts "Sinatra-S3 #{S3::VERSION}"
+  exit 0
+end
+
+if ARGV.any? { |arg| %w(--migrate migrate).any? { |flag| arg == flag } }
+  ActiveRecord::Base.logger = Logger.new(STDOUT)
+  ActiveRecord::Migration.verbose = true
+
+  out_dir = File.dirname(S3.config[:db][:database])
+  FileUtils.mkdir_p(out_dir) unless File.exists?(out_dir)
+
+  ActiveRecord::Migrator.migrate(File.join(S3::ROOT_DIR, 'db', 'migrate'))
+  num_users = User.count || 0
+  if num_users == 0
+    puts "** No users found, creating the `admin' user."
+    class S3KeyGen
+      include S3::Helpers
+      def secret() generate_secret(); end;
+      def key() generate_key(); end;
+    end
+    User.create :login => "admin", :password => S3::DEFAULT_PASSWORD,
+      :email => "admin@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),
+      :activated_at => Time.now, :superuser => 1
+  end
+  exit 0
+end

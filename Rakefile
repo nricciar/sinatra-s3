@@ -2,21 +2,27 @@ $:.unshift "./lib"
 require 'rake'
 require 'rake/testtask'
 require 'rake/gempackagetask'
+require 'sinatra-s3'
 
 spec = Gem::Specification.new do |s| 
   s.name = "sinatra-s3"
-  s.version = "0.9"
+  s.version = S3::VERSION
   s.author = "David Ricciardi"
   s.email = "nricciar@gmail.com"
+  s.homepage = "http://github.com/nricciar/sinatra-s3"
   s.platform = Gem::Platform::RUBY
   s.summary = "An implementation of the Amazon S3 API in Ruby"
-  s.files = FileList["{bin,lib,public,db}/**/*"].to_a
+  s.files = FileList["{bin,lib,public}/**/*"].to_a +
+    FileList["db/migrate/*"].to_a +
+    ["Rakefile"]
   s.require_path = "lib"
-  s.autorequire = "name"
+  s.executables = ['sinatra-s3']
   s.test_files = FileList["{test}/*.rb"].to_a
   s.has_rdoc = false
   s.extra_rdoc_files = ["README"]
   s.add_dependency("sinatra", ">= 1.0")
+  s.add_dependency("aws-s3", ">= 0.6.2")
+  s.add_dependency("haml", ">= 2.2.15")
 end
 
 Rake::GemPackageTask.new(spec) do |pkg| 
@@ -25,7 +31,6 @@ end
 
 namespace :setup do
   task :wiki do
-    require 's3'
     begin
       Bucket.find_root('wiki')
     rescue S3::NoSuchBucket
@@ -37,7 +42,7 @@ namespace :setup do
 	  def key() generate_key(); end;
 	end
 	puts "** No wiki user found, creating the `wiki' user."
-	wiki_owner = User.create :login => "wiki", :password => DEFAULT_PASSWORD,
+	wiki_owner = User.create :login => "wiki", :password => S3::DEFAULT_PASSWORD,
 	  :email => "wiki@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),
 	  :activated_at => Time.now
       end
@@ -73,7 +78,7 @@ namespace :db do
 	def secret() generate_secret(); end;
 	def key() generate_key(); end;
       end
-      User.create :login => "admin", :password => DEFAULT_PASSWORD,
+      User.create :login => "admin", :password => S3::DEFAULT_PASSWORD,
 	:email => "admin@parkplace.net", :key => S3KeyGen.new.key(), :secret => S3KeyGen.new.secret(),
 	:activated_at => Time.now, :superuser => 1
     end

@@ -4,7 +4,7 @@ ParkPlace, another S3 clone written by _why.
 Requirements
 -------------------------------------------------------
 
-  gem install sinatra builder aws-s3
+  gem install sinatra haml aws-s3
 
 Optional Torrent Support
 -------------------------------------------------------
