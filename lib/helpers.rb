@@ -70,5 +70,10 @@ module S3
       c.name.sub(params['prefix'], '').split(params['delimiter'])[0] + params['delimiter']
     end
 
+    def r(name, title)
+      @title = title
+      haml name
+    end
+
   end
 end

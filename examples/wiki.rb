@@ -4,16 +4,15 @@ require 'wikicloth'
 S3::Application.callback :mime_type => 'text/wiki' do
   headers["Content-Type"] = "text/html"
   if params.has_key?('edit')
-    @title = "Editing #{@slot.name.gsub(/_/,' ')}"
-    haml :edit
+    r :edit, "Editing #{@slot.name.gsub(/_/,' ')}"
   elsif params.has_key?('diff')
-    @diff = Bit.diff(params[:diff], params[:to])
-    @title = "Changes to #{@slot.name.gsub(/_/,' ')}"
-    haml :diff
+    @from = Bit.find_by_version(params[:diff])
+    @to = Bit.find_by_version(params[:to])
+    @diff = @from.diff(@to)
+    r :diff, "Changes to #{@slot.name.gsub(/_/,' ')}"
   elsif params.has_key?('history')
     @history = Slot.find(:all, :conditions => [ 'name = ? AND parent_id = ?', @slot.name, @slot.parent_id ], :order => "id DESC", :limit => 20)
-    @title = "Revision history for #{@slot.name.gsub(/_/,' ')}"
-    haml :history
+    r :history, "Revision history for #{@slot.name.gsub(/_/,' ')}"
   else
     p = {}
     headers.each { |k,v| p[$1.upcase.gsub(/\-/,'_')] = v if k =~ /x-amz-(.*)/ }
@@ -22,19 +21,16 @@ S3::Application.callback :mime_type => 'text/wiki' do
       :link_handler => CustomLinkHandler.new,
       :params => p
     })
-    @title = @slot.name.gsub(/_/,' ')
-    haml :wiki
+    r :wiki, @slot.name.gsub(/_/,' ')
   end
 end
 
 S3::Application.callback :error => 'NoSuchKey' do
   headers["Content-Type"] = "text/html"
   if params.has_key?('edit')
-    @title = "Edit Page"
-    haml :edit
+    r :edit, "Edit Page"
   else
-    @title = "Page Does Not Exist"
-    haml :does_not_exist
+    r :does_not_exist, "Page Does Not Exist"
   end
 end
 
@@ -45,8 +41,7 @@ S3::Application.callback :error => 'AccessDenied' do
     status 401
     headers["WWW-Authenticate"] = %(Basic realm="wiki")
     headers["Content-Type"] = "text/html"
-    @title = "Access Denied"
-    haml :access_denied
+    r :access_denied, "Access Denied"
   end
 end
 
@@ -148,9 +143,20 @@ __END__
 %p You are not authorized to access the specified resource.
 
 @@ diff
-%p #{@diff.stats[:total][:insertions]} insertions and #{@diff.stats[:total][:deletions]} deletions
-%pre
-  = preserve "#{@diff.patch.gsub('<','&lt;').gsub('>','&gt;')}"
+%div#content
+  %p #{@diff.stats[:total][:insertions]} insertions and #{@diff.stats[:total][:deletions]} deletions
+  - @lines = @diff.patch.gsub('<','&lt;').gsub('>','&gt;').split("\n")
+  - @lines[4..-1].each do |line|
+    - case
+    - when line =~ /\-([0-9]+),([0-9]+) \+([0-9]+),([0-9]+)/
+      %div{ :style => "font-weight:bold;padding:5px 0" } Line #{$1}
+    - when line[0,1] == "\\"
+    - when line[0,1] == "+"
+      %div{ :style => "background-color:#99ff99" } &nbsp;#{line[1,line.length]}
+    - when line[0,1] == "-"
+      %div{ :style => "background-color:#ff9999" } &nbsp;#{line[1,line.length]}
+    - else
+      %div{ :style => "background-color:#ebebeb" } &nbsp;#{line}
 
 @@ does_not_exist
 %h2 Page Does Not Exist
