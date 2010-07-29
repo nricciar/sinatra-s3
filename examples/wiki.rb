@@ -63,7 +63,7 @@ S3::Application.callback :when => 'before' do
   end
 
   # fix some caching issues
-  if params.has_key?('edit') || params.has_key?('history')
+  if params.has_key?('edit') || params.has_key?('history') || params.has_key?('diff')
     env.delete('HTTP_IF_MODIFIED_SINCE')
     env.delete('HTTP_IF_NONE_MATCH')
   end
@@ -144,7 +144,7 @@ __END__
 
 @@ diff
 %div#content
-  %p #{@diff.stats[:total][:insertions]} insertions and #{@diff.stats[:total][:deletions]} deletions
+  %p Change Summary: #{@diff.stats[:total][:insertions]} insertions and #{@diff.stats[:total][:deletions]} deletions
   - @lines = @diff.patch.gsub('<','&lt;').gsub('>','&gt;').split("\n")
   - @lines[4..-1].each do |line|
     - case
@@ -152,9 +152,9 @@ __END__
       %div{ :style => "font-weight:bold;padding:5px 0" } Line #{$1}
     - when line[0,1] == "\\"
     - when line[0,1] == "+"
-      %div{ :style => "background-color:#99ff99" } &nbsp;#{line[1,line.length]}
+      %ins{ :style => "background-color:#99ff99" } &nbsp;#{line[1,line.length]}
     - when line[0,1] == "-"
-      %div{ :style => "background-color:#ff9999" } &nbsp;#{line[1,line.length]}
+      %del{ :style => "background-color:#ff9999" } &nbsp;#{line[1,line.length]}
     - else
       %div{ :style => "background-color:#ebebeb" } &nbsp;#{line}
 

@@ -11,7 +11,8 @@ padding:3px !important;
 text-align:center;
 }
 .thumbimage { border:1px solid #CCCCCC }
-
+ins,del { display:block }
+ins { text-decoration:none }
 #page h1, #page h2, #page h3, #page h4, #page h5, #page h6 {
   padding-bottom:0.17em;
   padding-top:0.5em;
