@@ -10,6 +10,7 @@ module S3
     end
 
     set :sessions, :on
+    enable :inline_templates
 
     before do
       ActiveRecord::Base.verify_active_connections!
@@ -25,7 +26,7 @@ module S3
     end
 
     get '/control/login' do
-      login_view
+      r :login, "Login"
     end
 
     post '/control/login' do
@@ -52,7 +53,7 @@ module S3
     get '/control/buckets/?' do
       login_required
       load_buckets
-      bucket_view
+      r :buckets, "Buckets"
     end
 
     post '/control/buckets/?' do
@@ -67,7 +68,7 @@ module S3
 	 load_buckets
 	 @bucket.errors.add_to_base("Invalid bucket name.")
       end
-      bucket_view
+      r :buckets, "Buckets"
     end
 
     get '/control/buckets/:bucket/?' do
@@ -75,7 +76,7 @@ module S3
       @bucket = Bucket.find_root(params[:bucket])
       only_can_read @bucket
       @files = Slot.find :all, :conditions => ['deleted = 0 AND parent_id = ?', @bucket.id], :order => 'name'
-      files_view
+      r :files, "/#{@bucket.name}"
     end
 
     post '/control/buckets/:bucket/?' do
@@ -161,7 +162,7 @@ module S3
       @file = @bucket.find_slot(params[:captures].last)
       only_owner_of @bucket
       @versions = @bucket.git_repository.log.path(File.basename(@file.obj.path))
-      changes_view
+      r :changes, "Commit Log", :popup
     end
 
     post '/control/delete/:bucket/?' do
@@ -197,14 +198,14 @@ module S3
     get "/control/profile/?" do
       login_required
       @usero = @user
-      profile_view
+      r :profile, "Your Profile"
     end
 
     post "/control/profile/?" do
       login_required
       @user.update_attributes(params['user'])
       @usero = @user
-      profile_view
+      r :profile, "Your Profile"
     end
 
     get "/control/users/?" do
@@ -212,7 +213,7 @@ module S3
       only_superusers
       @usero = User.new
       @users = User.find :all, :conditions => ['deleted != 1'], :order => 'login'
-      users_view
+      r :users, "User List"
     end
 
     post "/control/users/?" do
@@ -224,7 +225,7 @@ module S3
 	redirect "/control/users"
       else
 	@users = User.find :all, :conditions => ['deleted != 1'], :order => 'login'
-	users_view
+        r :users, "User List"
       end
     end
 
@@ -232,7 +233,7 @@ module S3
       login_required
       only_superusers
       @usero = User.find_by_login params[:login]
-      profile_view
+      r :profile, @usero.login
     end
 
     post "/control/users/:login/?" do
@@ -249,7 +250,7 @@ module S3
       if @usero.update_attributes(params['user'])
         redirect "/control/users/#{@usero.login}"
       else
-	profile_view
+        r :profile, @usero.login
       end
     end
 
@@ -265,21 +266,13 @@ module S3
       redirect "/control/users"
     end
 
-    get %r{^/control/edit/(.+?)/(.+)$} do
-      login_required
-      @bucket = Bucket.find_root(params[:captures].first)
-      @slot = @bucket.find_slot(params[:captures].last)
-      only_can_write @slot
-      edit_view
-    end
-
     get %r{^/control/acl/(.+?)/(.+)$} do
       login_required
       @bucket = Bucket.find_root(params[:captures].first)
       only_can_write_acp @bucket
       @slot = @bucket.find_slot(params[:captures].last)
       only_can_write @slot
-      acl_view
+      r :acl, "Modify File Access", :popup
     end
 
     post %r{^/control/acl/(.+?)/(.+)$} do
@@ -307,7 +300,7 @@ module S3
       @bucket = Bucket.find_root(params[:captures].first)
       @slot = @bucket.find_slot(params[:captures].last)
       only_can_write @slot
-      meta_view
+      r :meta, "Metadata", :popup
     end
 
     post %r{^/control/meta/(.+?)/(.+)$} do
@@ -329,439 +322,304 @@ module S3
       end
 
       @slot.update_attributes({ :meta => newm })
-      meta_view
-    end
-
-    protected
-    def default_layout(str)
-      builder do |html|
-	html.html do
-	  html.head do
-	    html << "<title>Control Center &raquo; #{str}</title>"
-	    html.script " ", :language => 'javascript', :src => '/control/s/js/prototype.js' 
-	    html.script " ", :language => 'javascript', :src => '/control/s/js/upload_status.js' if $UPLOAD_PROGRESS
-	    html.style "@import '/control/s/css/control.css';", :type => 'text/css'
-	  end
-	  html.body do
-	    html.div :id => "page" do
-	      if @user and not @login
-		html.div :class => "menu" do
-		  html.ul do
-		    html.li { html.a 'buckets', :href => "/control/buckets" }
-		    html.li { html.a 'users', :href => "/control/users" } if @user.superuser?
-		    html.li { html.a 'profile', :href => "/control/profile" }
-		    html.li { html.a 'logout', :href => "/control/logout" }
-		  end
-		end
-	      end
-	      html.div :id => "header" do
-		html.h1 "Control Center"
-		html.h2 str
-	      end
-	      html.div :id => "content" do
-		yield html
-	      end
-	    end
-	  end
-	end
-      end
-    end
-
-    def popup_layout(str)
-      builder do |html|
-	html.html do
-	  html.head do
-	    html << "<title>Park Place Control Center &raquo; #{str}</title>"
-	    html.script " ", :language => 'javascript', :src => '/control/s/js/prototype.js'
-	    html.style "@import '/control/s/css/control.css';", :type => 'text/css'
-	  end
-	end
-	html.body do
-	  html.div :id => "content" do
-	    yield html
-	  end
-	end
-      end
-    end
-
-    def login_view
-      default_layout("Login") do |html|
-	html.form :method => "post", :class => "create" do
-	  html.div :class => "required" do
-	    html.label 'User', :for => "login"
-	    html.input :type => "text", :name => "login", :id => "login"
-	  end
-	  html.div :class => "required" do
-	    html.label 'Password', :for => "password"
-	    html.input :type => "password", :name => "password", :id => "password"
-	  end
-	  html.input :type => "submit", :value => "Login", :id => "loggo", :name => "loggo"
-	end
-      end
-    end
-
-    def bucket_view
-      default_layout("My Buckets") do |html|
-	if @buckets.any?
-	  html.table do
-	    html.thead do
-	      html.tr do
-		html.th "Name"
-		html.th "Contains"
-		html.th "Updated on"
-		html.th "Info"
-		html.th "Actions"
-	      end
-	    end
-	    html.tbody do
-	      @buckets.each do |bucket|
-	        html.tr do
-		  html.th do
-		    html.div { html.a bucket.name, :href => "/control/buckets/#{bucket.name}" }
-		  end
-		  html.td "#{bucket.total_children rescue 0} files"
-		  html.td bucket.updated_at
-		  html.td bucket.access_readable + (bucket.versioning_enabled? ? ",versioned" : "")
-		  html.td { html.a "Delete", :href => "/control/delete/#{bucket.name}", :onClick => POST, :title => "Delete bucket #{bucket.name}" }
-  	        end
-	      end
-	    end
-	  end
-	else
-	  html.p "A sad day.  You have no buckets yet."
-	end
-	html.h3 "Create a Bucket"
-	html.form :method => "post", :class => "create" do
-	  html << errors_for(@bucket)
-	  html.input :name => 'bucket[owner_id]', :type => 'hidden', :value => @bucket.owner_id
-	  html.div :class => "required" do
-	    html.label 'Bucket Name', :for => 'bucket[name]'
-	    html.input :name => 'bucket[name]', :type => 'text', :value => @bucket.name
-	  end
-	  html.div :classs => "required" do
-	    html.label 'Permissions', :for => 'bucket[access]'
-	    html.select :name => 'bucket[access]' do
-	      CANNED_ACLS.sort.each do |acl, perm|
-		opts = {:value => perm}
-		opts[:selected] = true if perm == @bucket.access
-		html.option acl, opts
-	      end
-	    end
-	  end
-	  html.input :type => 'submit', :value => "Create", :id => "newbucket", :name => "newbucket"
-	end
-      end
-    end
-
-    def files_view
-      default_layout("/#{@bucket.name}") do |html|
-	html.p "Click on a file name to get file details."
-	html.table do
-	  html.caption do
-	    if defined?(Git)
-	      html.span :style => "float:right" do
-		if !@bucket.versioning_enabled?
-		  html.a "Enable Versioning For This Bucket", :href=> "/control/buckets/#{@bucket.name}/versioning", :onClick => POST
-		else
-		  html.span "Versioning Enabled"
-		end
-	      end
-	    end
-	    html << "<a href=\"/control/buckets\">&larr; Buckets</a>"
-	  end
-	  html.thead do
-	    html.tr do
-	      html.th "File"
-	      html.th "Size"
-	      html.th "Permission"
-	    end
-	  end
-	  html.tbody do
-	    if @files.empty?
-	      html.tr { html.td "No Files", :colspan => "3", :style => "padding:15px;text-align:center" }
-	    end
-	    @files.each do |file|
-	      html.tr do
-		html.td do
-		  html.a file.name, :href => "javascript://", :onclick => "$('details-#{file.id}').toggle()"
-		  html.div :class => "details", :id => "details-#{file.id}", :style => "display:none" do
-		    html.p "Revision: #{file.git_object.objectish}" if @bucket.versioning_enabled? && !file.git_object.nil?
-		    if file.torrent
-		      html << "<p>" + ["#{file.torrent.seeders} seeders",
-			"#{file.torrent.leechers} leechers",
-			"#{file.torrent.total} downloads" ].join(" &bull; ") + "</p>"
-		    end
-		    html.p "Last modified on #{file.updated_at}"
-		    html.p do
-		      info = ["<a href=\"" + signed_url("/#{@bucket.name}/#{file.name}") + "\" target=\"_blank\">Get</a>"]
-		      info += ["<a href=\"/control/acl/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">Access</a>"]
-		      info += ["<a href=\"/control/meta/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">Meta</a>"]
-		      info += ["<a href=\"/control/changes/#{@bucket.name}/#{file.name}\" onclick=\"#{POPUP}\">Changes</a>"] if @bucket.versioning_enabled?
-		      info += ["<a href=\"" + signed_url("/#{@bucket.name}/#{file.name}") + "&torrent\" target=\"_blank\">Torrent</a>"] if defined?(RubyTorrent)
-		      info += ["<a href=\"/control/delete/#{@bucket.name}/#{file.name}\" onclick=\"#{POST}\" title=\"Delete file #{file.name}\">Delete</a>"]
-		      html << info.join(" &bull; ")
-		    end
-		  end
-		end
-		html.td number_to_human_size(file.size)
-		html.td file.access_readable
-	      end
-	    end
-	  end
-	end
-	html.div :id => "results" do
-	end
-	html.div :id => "progress-bar", :style => "display:none" do
-	end
-	html.iframe :id => "upload", :name => "upload", :style => "display:none" do
-	end
-
-	@upid = Time.now.to_f
-	form_options = { :action => "?upload_id=#{@upid}", :id => "upload-form", :method => 'post', :enctype => 'multipart/form-data', :class => 'create' }
-	form_options.merge!({ :onsubmit => "UploadProgress.monitor('#{@upid}')", :target => "upload" }) if $UPLOAD_PROGRESS
-	html.form form_options do
-	  html.h3 "Upload a File"
-	  html.div :class => "required" do
-	    html.input :name => 'upfile', :type => 'file'
-	  end
-	  html.div :class => "optional" do
-	    html.label 'File Name', :for => 'fname'
-	    html.input :name => 'fname', :type => 'text'
-	  end
-	  html.div :class => "required" do
-	    html.label 'Permissions', :for => 'facl'
-	    html.select :name => 'facl' do
-	      CANNED_ACLS.sort.each do |acl, perm|
-		opts = {:value => perm}
-		opts[:selected] = true if perm == @bucket.access
-		html.option acl, opts
-	      end
-	    end
-	  end
-	  html.input :type => 'submit', :value => "Create", :id => "newfile", :name => "newfile"
-	end
-      end
-    end
-
-    def users_view
-      default_layout("User List") do |html|
-	html.table do
-	  html.thead do
-	    html.tr do
-	      html.th "Login"
-	      html.th "Activated On"
-	      html.th "Total Storage"
-	      html.th "Actions"
-	    end
-	  end
-	  html.body do
-	    @users.each do |user|
-	      html.tr do
-		html.th { html.a user.login, :href => "/control/users/#{user.login}" }
-		html.td user.activated_at
-		html.td number_to_human_size(Bit.sum(:size, :conditions => [ 'owner_id = ?', user.id ]))
-		html.td { html.a "Delete", :href => "/control/users/delete/#{user.login}", :onclick => POST, :title => "Delete user #{user.login}" }
-	      end
-	    end
-	  end
-	end
-	html.h3 "Create a User"
-	html.form :action => "/control/users", :method => 'post', :class => 'create' do
-	  html << errors_for(@usero)
-	  html.div :class => "required" do
-	    html.label 'Login', :for => 'user[login]'
-	    html.input :name => 'user[login]', :type => 'text', :value => @usero.login, :class => "large"
-	  end
-	  html.div :class => "required inline" do
-	    html.label 'Is a super-admin? ', :for => 'user[superuser]'
-	    html.input :type => 'checkbox', :name => 'user[superuser]', :value => @usero.superuser
-	  end
-	  html.div :class => "required" do
-	    html.label 'Password', :for => 'user[password]'
-	    html.input :name => 'user[password]', :type => 'password', :class => "fixed"
-	  end
-	  html.div :class => "required" do
-	    html.label 'Password again', :for => 'user[password_confirmation]'
-	    html.input :name => 'user[password_confirmation]', :type => 'password', :class => "fixed"
-	  end
-	  html.div :class => "required" do
-	    html.label 'Email', :for => 'user[email]'
-	    html.input :name => 'user[email]', :type => 'text', :value => @usero.email
-	  end
-	  html.div :class => "required" do
-	    html.label 'Key (must be unique)', :for => 'user[key]'
-	    html.input :name => 'user[key]', :type => 'text', :class => "fixed long", :value => @usero.key || generate_key
-	  end
-	  html.div :class => "required" do
-	    html.label 'Secret', :for => 'user[secret]'
-	    html.input :name => 'user[secret]', :class => "fixed long", :type => 'text', :value => @usero.secret || generate_secret
-	  end
-	  html.input :type => 'submit', :value => "Create", :name => "newuser", :id => "newuser"
-	end
-      end
-    end
-
-    def profile_view
-      default_layout(@usero.id == @user.id ? "Your Profile" : @usero.login) do |html|
-	html.form :method => 'post', :class => 'create' do
-	  html << errors_for(@usero)
-	  if @user.superuser?
-	    html.div :class => "required inline" do
-	      html.label 'Is a super-admin? ', :for => 'user[superuser]'
-	      html.input :type => 'checkbox', :name => 'user[superuser]', :value => @usero.superuser
-	    end
-	  end
-	  html.div :class => "required" do
-	    html.label 'Password', :for => 'user[password]'
-	    html.input :name => 'user[password]', :type => 'password', :class => "fixed"
-	  end
-	  html.div :class => "required" do
-	    html.label 'Password again', :for => 'user[password_confirmation]'
-	    html.input :class => 'fixed', :name => 'user[password_confirmation]', :type => 'password'
-	  end
-	  html.div :class => "required" do
-	    html.label 'Email', :for => 'user[email]'
-	    html.input :name => 'user[email]', :type => 'text', :value => @usero.email
-	  end
-	  html.div :class => "required" do
-	    html.label 'Key', :for => 'key'
-	    html.h4 @usero.key
-	  end
-	  html.div :class => "required" do
-	    html.label 'Secret', :for => 'secret'
-	    html.h4 @usero.secret
-	  end
-	  html.input :type => 'submit', :value => "Save", :id => "newfile", :name => "newfile"
-	end
-      end
-    end
-
-    def meta_view
-      popup_layout("") do |html|
-	html.form :method => 'post', :class => 'create', :style => "text-align:left" do
-	  html << errors_for(@slot)
-	  html.table do
-	    html.thead do
-	      html.tr do
-	        html.th "Key"
-	        html.th "Value"
-	      end
-	    end
-	    html.tbody do
-	      if @slot.meta.empty?
-		html.tr { html.td "No Metadata", :colspan => "2", :style => "padding:8px;text-align:center" }
-	      else
-	        @slot.meta.each do |k,v|
-	          html.tr do
-	  	    html.td k
-		    html.td { html.input :name => "m[#{k}]", :type => "text", :value => v, :style => "width:100%" }
-	          end
-	        end
-	      end
-	    end
-	    html.thead { html.tr { html.th "New Key", :colspan => "2" } }
-	    html.tbody do
-	      html.tr do
-		html.td do
-		  html.input :name => "meta[key]", :type => "text", :style => "width:100%"
-		end
-		html.td do
-		  html.input :name => "meta[value]", :type => "text", :style => "width:100%"
-		end
-	      end
-	    end
-	  end
-	  html.div :style => "text-align:center;margin-top:15px" do
-	    html.input :type => "submit", :value => "Update"
-	  end
-	end
-      end
-    end
-
-    def edit_view
-      default_layout(@slot.name) do |html|
-	html.form :method => 'post', :class => 'create' do
-	  html.textarea "", :name => "slot[file_data]", :style => "width:100%;height:20em"
-	  html.div :class => "required" do
-	    html.label "Content-Type", :for => "slot[content_type]"
-	    html.input :name => "slot[content_type]", :type => "text", :value => @slot.obj.mime_type
-	  end
-	  html.input :type => "submit", :value => "Update"
-	end
-      end
-    end
-
-    def acl_view
-      popup_layout("") do |html|
-	html.table do
-	  html.thead do
-	    html.tr do
-	      html.th "For"
-	      html.th "Access"
-	    end
-	  end
-	  html.tbody do
-	    @slot.acl_list.each_pair do |key,acl|
-	      html.tr do
-		html.td acl[:type] == "CanonicalUser" ? "#{acl[:id]} (#{acl[:name]})" : acl[:uri].split("/").last
-		html.td acl[:access]
-	      end
-	    end
-	  end
-	end
-	html.div :style => "text-align:left;margin-top:10px" do
-	  html.h3 "Modify File Access"
-	  html.form :class => "create", :method => "post" do
-	    html.div :class => "required" do
-	      html.label "For", :for => "acl_type"
-	      html.select :name => "acl[type]", :id => "acl_type", :onchange => "$('user_id_box').style.display = this.value == 'email' ? 'block' : 'none';" do
-		html.option "AllUsers", :value => "http://acs.amazonaws.com/groups/global/AllUsers"
-		html.option "AuthenticatedUsers", :value => "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
-		html.option "By ID/E-Mail", :value => "email"
-	      end
-	    end
-	    html.div :class => "required", :style => "display:none", :id => "user_id_box" do
-	      html.label "User ID / E-Mail", :for => "user_id"
-	      html.input :type => "text", :name => "acl[user_id]", :id => "user_id"
-	    end
-	    html.div :class => "required" do
-	      html.label "Access", :for => "user_access"
-	      html.select :name => "acl[access]", :id => "user_access" do
-		html.option "READ", :value => "READ"
-		html.option "READ_ACP", :value => "READ_ACP"
-		html.option "WRITE", :value => "WRITE"
-		html.option "WRITE_ACP", :value => "WRITE_ACP"
-	      end
-	    end
-	    html.input :type => "submit", :value => "Update"
-	  end
-	end
-      end
-    end
-
-    def changes_view
-      popup_layout("") do |html|
-	html.table do
-	  html.thead do
-	    html.tr do
-	      html.th "Commit Log For #{@file.name}"
-	    end
-	  end
-	  html.tbody do
-	    @versions.each do |version|
-	      html.tr do
-		html.td do
-		  html.div { html.a version.sha, :target => "_blank", :href => signed_url("/#{@bucket.name}/#{@file.name}") + "&version-id=#{version.sha}" }
-		  html.div "On: #{version.date}"
-		  html.div "By: #{version.author.name} <#{version.author.email}>"
-		end
-	      end
-	    end
-	  end
-	end
-      end
+      r :meta, "Metadata", :popup
     end
 
   end
 
 end
+
+__END__
+
+@@ layout
+%html
+  %head
+    %title Control Center &raquo; #{@title}
+    %script{ :language => "JavaScript", :type => "text/javascript", :src => "/control/s/js/prototype.js" }
+    %style{ :type => "text/css" }
+      @import '/control/s/css/control.css';
+  %body
+    %div#page
+      - if @user and not @login
+        %div.menu
+          %ul
+            %li
+              %a{ :href => "/control/buckets" } buckets
+              - if @user.superuser?
+                %a{ :href => "/control/users" } users
+              %a{ :href => "/control/profile" } profile
+              %a{ :href => "/control/logout" } logout
+      %div#header
+        %h1 Control Center
+        %h2 #{@title}
+      %div#content
+        = yield
+
+@@ popup
+%html
+  %head
+    %title #{@title}
+    %style{ :type => "text/css" } 
+      @import '/control/s/css/control.css';
+    %script{ :language => 'javascript', :src => '/control/s/js/prototype.js' }
+  %body
+    %div#content
+      = yield
+
+@@ login
+%form.create{ :method => "post" }
+  %div.required
+    %label{ :for => "login" } User
+    %input#login{ :type => "text", :name => "login" }
+  %div.required
+    %label{ :for => "password" } Password
+    %input#password{ :type => "password", :name => "password" }
+  %input#loggo{ :type => "submit", :value => "Login", :name => "loggo" }
+
+@@ buckets
+- if @buckets.any?
+  %table
+    %thead
+      %tr
+        %th Name
+        %th Contains
+        %th Updated on
+        %th Info
+        %th Actions
+    %tbody
+      - @buckets.each do |bucket|
+        %tr
+          %th
+            %a{ :href => "/control/buckets/#{bucket.name}" } #{bucket.name}
+          %td #{bucket.total_children rescue 0} files
+          %td #{bucket.updated_at}
+          %td #{bucket.access_readable + (bucket.versioning_enabled? ? ",versioned" : "")}
+          %td
+            %a{ :href => "/control/delete/#{bucket.name}", :onClick => POST, :title => "Delete Bucket #{bucket.name}" } Delete
+- else
+  %p A sad day. You have no buckets yet.
+%h3 Create a Bucket
+%form.create{ :method => "post" }
+  = preserve errors_for(@bucket)
+  %input{ :name => "bucket[owner_id]", :type => "hidden", :value => @bucket.owner_id }
+  %div.required
+    %label{ :for => "bucket[name]" } Bucket Name
+    %input{ :name => "bucket[name]", :type => "text", :value => @bucket.name }
+  %div.required
+    %label{ :for => "bucket[access]" } Permissions
+    %select{ :name => "bucket[access]" }
+      - CANNED_ACLS.sort.each do |acl,perm|
+        - opts = { :value => perm }
+        - opts[:selected] = true if perm == @bucket.access
+        %option{ opts } #{acl}
+  %input#newbucket{ :type => "submit", :value => "Create", :name => "newbucket" }
+
+@@ files
+%p Click on a file name to get file details.
+%table
+  %caption
+    - if defined?(Git)
+      %span{ :style => "float:right" }
+        - if !@bucket.versioning_enabled?
+          %a{ :href => "/control/buckets/#{@bucket.name}/versioning", :onClick => POST } Enable Versioning For This Bucket
+        - else
+          Versioning Enabled
+    %a{ :href => "/control/buckets" } &larr; Buckets
+  %thead
+    %tr
+      %th File
+      %th Size
+      %th Permission
+  %tbody
+    - if @files.empty?
+      %tr
+        %td{ :colspan => "3", :style => "padding:15px;text-align:center" } No Files
+    - @files.each do |file|
+      %tr
+        %td
+          %a{ :href => "javascript:///", :onclick => "$('details-#{file.id}').toggle()" } #{file.name}
+          %div.details{ :id => "details-#{file.id}", :style => "display:none" }
+            - if @bucket.versioning_enabled? && !file.git_object.nil?
+              %p Revision: #{file.git_object.objectish}
+            - if file.torrent
+              %p #{file.torrent.seeders} seeders &bull; #{file.torrent.leechers} leechers &bull; #{file.torrent.total} downloads
+            %p Last modified on #{file.updated_at}
+            %p
+              %a{ :href => signed_url("/#{@bucket.name}/#{file.name}"), :target => "_blank" } Get
+              &bull;
+              %a{ :href => "/control/acl/#{@bucket.name}/#{file.name}", :onclick => POPUP } Access
+              &bull;
+              %a{ :href => "/control/meta/#{@bucket.name}/#{file.name}", :onclick => POPUP } Meta
+              &bull;
+              - if @bucket.versioning_enabled?
+                %a{ :href => "/control/changes/#{@bucket.name}/#{file.name}", :onclick => POPUP } Changes
+                &bull;
+              - if defined?(RubyTorrent)
+                %a{ :href => signed_url("/#{@bucket.name}/#{file.name}") + "&torrent", :target => "_blank" } Torrent
+                &bull;
+              %a{ :href => "/control/delete/#{@bucket.name}/#{file.name}", :onclick => POST, :title => "Delete file #{file.name}" } Delete
+        %td #{number_to_human_size(file.size)}
+        %td #{file.access_readable}
+%div#results
+%div#progress-bar{ :style => "display:none" }
+%iframe#upload{ :name => "upload", :style => "display:none" }
+- @upid = Time.now.to_f
+- form_options = { :action => "?upload_id=#{@upid}", :id => "upload-form", :method => 'post', :enctype => 'multipart/form-data' }
+- form_options.merge!({ :onsubmit => "UploadProgress.monitor('#{@upid}')", :target => "upload" }) if $UPLOAD_PROGRESS
+%form.create{ form_options }
+  %h3 Upload a File
+  %div.required
+    %input{ :name => "upfile", :type => "file" }
+  %div.optional
+    %label{ :for => "fname"} File Name
+    %input{ :name => "fname", :type => "text" }
+  %div.required
+    %label{ :for => "facl" } Permissions
+    %select{ :name => "facl" }
+      - CANNED_ACLS.sort.each do |acl, perm|
+        - opts = { :value => perm }
+        - opts[:selected] = true if perm == @bucket.access
+        %option{ opts } #{acl}
+  %input#newfile{ :name => "newfile", :value => "Create", :type => "submit" }
+
+@@ users
+%table
+  %thead
+    %tr
+      %th Login
+      %th Activated On
+      %th Total Storage
+      %th Actions
+  %tbody
+    - @users.each do |user|
+      %tr
+        %th
+          %a{ :href => "/control/users/#{user.login}" } #{user.login}
+        %td #{user.activated_at}
+        %td #{number_to_human_size(Bit.sum(:size, :conditions => [ 'owner_id = ?', user.id ]))}
+        %td
+          %a{ :href => "/control/users/delete/#{user.login}", :onclick => POST, :title => "Delete user #{user.login}" } Delete
+%h3 Create a User
+%form.create{ :action => "/control/users", :method => "post" }
+  = preserve errors_for(@usero)
+  %div.required
+    %label{ :for => "user[login]" } Login
+    %input.large{ :type => "text", :value => @usero.login, :name => "user[login]" }
+  %div.required.inline
+    %label{ :for => "user[superuser]" } Is a super-admin?
+    %input{ :type => "checkbox", :name => "user[superuser]", :value => @usero.superuser }
+  %div.required
+    %label{ :for => "user[password]" } Password
+    %input.fixed{ :type => "password", :name => "user[email]" }
+  %div.required
+    %label{ :for => "user[password_confirmation]" } Password again
+    %input.fixed{ :type => "password", :name => "user[password_confirmation]" }
+  %div.required
+    %label{ :for => "user[email]" } Email
+    %input{ :type => "text", :value => @usero.email, :name => "user[email]" }
+  %div.required
+    %label{ :for => "user[key]" } Key (must be unique)
+    %input.fixed.long{ :type => "text", :value => (@usero.key || generate_key), :name => "user[key]" }
+  %div.required
+    %label{ :for => "user[secret]" } Secret
+    %input.fixed.long{ :type => "text", :value => (@usero.secret || generate_secret), :name => "user[secret]" }
+  %input.newuser{ :type => "submit", :value => "Create", :name => "newuser" }
+
+@@ profile
+%form.create{ :method => "post" }
+  = preserve errors_for(@usero)
+  - if @user.superuser?
+    %div.required.inline
+      %label{ :for => "user[superuser]" } Is a super-admin?
+      %input{ :type => "checkbox", :name => "user[superuser]", :value => @usero.superuser }
+  %div.required
+    %label{ :for => "user[password]" } Password
+    %input.fixed{ :type => "password", :name => "user[email]" }
+  %div.required
+    %label{ :for => "user[password_confirmation]" } Password again
+    %input.fixed{ :type => "password", :name => "user[password_confirmation]" }
+  %div.required
+    %label{ :for => "user[email]" } Email
+    %input{ :type => "text", :value => @usero.email, :name => "user[email]" }
+  %div.required
+    %label{ :for => "key" } Key
+    %h4 #{@usero.key}
+  %div.required
+    %label{ :for => "secret" } Secret
+    %h4 #{@usero.secret}
+  %input#saveuser{ :type => "submit", :value => "Save", :name => "saveuser" }
+
+@@ meta
+%form.create{ :method => "post", :style => "text-align:left" }
+  = preserve errors_for(@slot)
+  %table
+    %thead
+      %tr
+        %th Key
+        %th Value
+    %tbody
+      - if @slot.meta.empty?
+        %tr{ :colspan => "2", :style => "padding:8px;text-align:center" } No Metadata for #{@slot.name}
+      - else
+        - @slot.meta.each do |k,v|
+          %tr
+            %td #{k}
+            %td
+              %input{ :name => "m[#{k}]", :type => "text", :value => v, :style => "width:100%" }
+    %thead
+      %tr
+        %th{ :colspan => "2" } "New Key"
+    %tbody
+      %tr
+        %td
+          %input{ :name => "meta[key]", :type => "text", :style => "width:100%" }
+        %td
+          %input{ :name => "meta[value]", :type => "text", :style => "width:100%" }
+  %div{ :style => "text-align:center;margin-top:15px" }
+    %input{ :type => "submit", :value => "Update" }
+
+@@ changes
+%table
+  %thead
+    %tr
+      %th Commit Log For #{@file.name}
+  %tbody
+    - @versions.each do |version|
+      %tr
+        %td
+          %div
+            %a{ :target => "_blank", :href => signed_url("/#{@bucket.name}/#{@file.name}") + "&version-id=#{version.sha}" } #{version.sha}
+          %div On: #{version.date}
+          %div By: #{version.author.name} <#{version.author.email}>
+
+@@ acl
+%table
+  %thead
+    %tr
+      %th For
+      %th Access
+  %tbody
+    - @slot.acl_list.each_pair do |key,acl|
+      %tr
+        %td #{acl[:type] == "CanonicalUser" ? "#{acl[:id]} (#{acl[:name]})" : acl[:uri].split("/").last}
+        %td #{acl[:access]}
+%div{ :style => "text-align:left;margin-top:10px" }
+  %h3 Modify File Access
+  %form.create{ :method => "post" }
+    %div.required
+      %label{ :for => "acl_type" } For
+      %select#acl_type{ :name => "acl[type]", :onchange => "$('user_id_box').style.display = this.value == 'email' ? 'block' : 'none';" }
+        %option{ :value => "http://acs.amazonaws.com/groups/global/AllUsers" } AllUsers
+        %option{ :value => "http://acs.amazonaws.com/groups/global/AuthenticatedUsers" } AuthenticatedUsers
+        %option{ :value => "email" } By ID/Email
+    %div#user_id_box.required{ :style => "display:none" }
+      %label{ :for => "user_id" } User ID/Email
+      %input#user_id{ :type => "text", :name => "acl[user_id]" }
+    %div.required
+      %label{ :for => "user_access" } Access
+      %select#user_access{ :name => "acl[access]" }
+        %option{ :value => "READ" } READ
+        %option{ :value => "READ_ACP" } READ_ACP
+        %option{ :value => "WRITE" } WRITE
+        %option{ :value => "WRITE_ACP" } WRITE_ACP
+    %input{ :type => "submit", :value => "Update" }

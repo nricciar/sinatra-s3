@@ -70,9 +70,9 @@ module S3
       c.name.sub(params['prefix'], '').split(params['delimiter'])[0] + params['delimiter']
     end
 
-    def r(name, title)
+    def r(name, title, layout = :layout)
       @title = title
-      haml name
+      haml name, :layout => layout
     end
 
   end

@@ -5,7 +5,7 @@ require 'sinatra/base'
 require 'openssl'
 require 'digest/sha1'
 require 'md5'
-require 'builder'
+require 'haml'
 
 begin
   require "git"
