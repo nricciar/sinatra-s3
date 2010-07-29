@@ -148,7 +148,7 @@ __END__
   - @lines = @diff.patch.gsub('<','&lt;').gsub('>','&gt;').split("\n")
   - @lines[4..-1].each do |line|
     - case
-    - when line =~ /\-([0-9]+),([0-9]+) \+([0-9]+),([0-9]+)/
+    - when line =~ /\-([0-9]+)(,([0-9]+)|) \+([0-9]+),([0-9]+)/
       %div{ :style => "font-weight:bold;padding:5px 0" } Line #{$1}
     - when line[0,1] == "\\"
     - when line[0,1] == "+"
