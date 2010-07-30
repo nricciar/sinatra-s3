@@ -165,7 +165,7 @@ __END__
 
 @@ edit
 %h2 #{@slot.nil? ? "Edit Page" : "Editing #{@slot.name.gsub(/_/,' ')}"}
-%form.create{ :method => "POST", :action => env['PATH_INFO'] }
+%form#edit_page_form.create{ :method => "POST", :action => env['PATH_INFO'] }
   %input{ :type => "hidden", :name => "redirect", :value => env['PATH_INFO'] }
   %input{ :type => "hidden", :name => "Content-Type", :value => "text/wiki" }
   %div.required
