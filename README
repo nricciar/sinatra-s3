@@ -6,18 +6,31 @@ Requirements
 
   gem install sinatra haml aws-s3
 
-Optional Torrent Support
--------------------------------------------------------
+  Optional Gems
 
-If you are interested in using Sinatra-S3 as a Bittorrent tracker you will need a custom
-version of RubyTorrent found at http://github.com/nricciar/rubytorrent.
+  ruby-git    - versioning
+  rubytorrent - bittorrent tracker
+
+  The released version of the rubytorrent gem is not compatable with Sinatra-S3 and you
+  will need to install the version found at http://github.com/nricciar/rubytorrent to have
+  a working bittorrent tracker.
 
 Install
 -------------------------------------------------------
 
-  1) cp s3.yml.example s3.yml
-  2) edit s3.yml to suit your needs
-  3) rake db:migrate
-  4) rackup config.ru -p 6060
-  5) go to http://localhost:6060/control/ and login with the username admin and the
-     password pass@word1
+  gem install sinatra-s3
+  sinatra-s3 install_dir
+  cd install_dir
+  rake db:migrate
+  rackup config.ru -p 6060
+
+  bleeding edge
+
+  git clone git://github.com/nricciar/sinatra-s3.git
+  cd sinatra-s3
+  cp s3.yml.example s3.yml (edit as needed)
+  rake db:migrate
+  rackup config.ru -p 6060
+
+Once running log in with the username admin and password pass@word1 via the control
+center at http://127.0.0.1:6060/control/ (change your password!!)

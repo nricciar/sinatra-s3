@@ -1,9 +1,0 @@
-To use the example wiki application insure you first have the wikicloth and ruby-git
-gems installed, and you have followed all the Sinatra-S3 install instructions.  Once
-you have Sinatra-S3 running correctly run the following commands in the Sinatra-S3
-root directory.
-
-  rake setup:wiki
-  rackup examples/wiki.ru -p 6060
-
-Access your Wiki at http://localhost:6060/ and admin at http://localhost:6060/control/
