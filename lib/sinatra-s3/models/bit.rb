@@ -42,8 +42,8 @@ class Bit < ActiveRecord::Base
   end
 
   def self.diff(from,to)
-    from = Bit.find_by_version(from)
-    to = Bit.find_by_version(to)
+    from = Bit.find_by_version(from) if from.instance_of?(String)
+    to = Bit.find_by_version(to) if to.instance_of?(String)
     from.git_repository.diff(from.objectish, to.objectish)
   end
 

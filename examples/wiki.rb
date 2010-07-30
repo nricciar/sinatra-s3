@@ -6,9 +6,7 @@ S3::Application.callback :mime_type => 'text/wiki' do
   if params.has_key?('edit')
     r :edit, "Editing #{@slot.name.gsub(/_/,' ')}"
   elsif params.has_key?('diff')
-    @from = Bit.find_by_version(params[:diff])
-    @to = Bit.find_by_version(params[:to])
-    @diff = @from.diff(@to)
+    @diff = Bit.diff(params[:diff],params[:to])
     r :diff, "Changes to #{@slot.name.gsub(/_/,' ')}"
   elsif params.has_key?('history')
     @history = Slot.find(:all, :conditions => [ 'name = ? AND parent_id = ?', @slot.name, @slot.parent_id ], :order => "id DESC", :limit => 20)
@@ -116,10 +114,10 @@ __END__
 %html
   %head
     %title #{@title}
-    %style{:type => "text/css"}
-      @import '/control/s/css/control.css';
-    %style{:type => "text/css"}
-      @import '/control/s/css/wiki.css';
+    %style{:type => "text/css"} @import '/control/s/css/control.css';
+    %style{:type => "text/css"} @import '/control/s/css/wiki.css';
+    %script{ :type => "text/javascript", :language => "JavaScript", :src => "/control/s/js/prototype.js" }
+    %script{ :type => "text/javascript", :language => "JavaScript", :src => "/control/s/js/wiki.js" }
   %body
     %div#header
       %h1
@@ -185,14 +183,16 @@ __END__
   %table#revision_history
     - @history.each_with_index do |rev, count|
       %tr
-        %td.check
-          %input{ :type => "radio", :name => "diff", :value => rev.version }
-        %td.check
-          %input{ :type => "radio", :name => "to", :value => rev.version }
+        - if @history.length > 1
+          %td.check
+            %input.from{ :type => "radio", :name => "diff", :value => rev.version, :checked => (count == 1 ? true : false), :style => (count > 0 ? nil : "display:none") }
+          %td.check
+            %input.to{ :type => "radio", :name => "to", :value => rev.version, :checked => (count == 0 ? true : false) }
         %td
           %a{ :href => "#{env['PATH_INFO']}?version-id=#{rev.version}" } #{rev.meta['comment']}
           on #{rev.updated_at}
-  %input{ :type => "submit", :value => "Compare Revisions" }
+  - if @history.length > 1
+    %input{ :type => "submit", :value => "Compare Revisions" }
 
 @@ wiki
 %div#wiki_page
