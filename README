@@ -1,36 +1,41 @@
-An implementation of the S3 API in Sinatra.  Most of the code was originaly taken from
-ParkPlace, another S3 clone written by _why.
-
-Requirements
--------------------------------------------------------
-
-  gem install sinatra haml aws-s3
-
-  Optional Gems
-
-  ruby-git    - versioning
-  rubytorrent - bittorrent tracker
-
-  The released version of the rubytorrent gem is not compatable with Sinatra-S3 and you
-  will need to install the version found at http://github.com/nricciar/rubytorrent to have
-  a working bittorrent tracker.
+Sinatra-S3 is an implementation of the Amazon S3 API.  Based on the
+Parkplace, written by _why, Sinatra-S3 has been extended to provide
+additional support for ACLs, versioning and a bittorrent tracker.
 
 Install
--------------------------------------------------------
+------------------------------------------------------------------
 
-  gem install sinatra-s3
-  sinatra-s3 install_dir
-  cd install_dir
+To install or upgrade Sinatra-S3
+
+  sudo gem install sinatra-s3
+  sinatra-s3 directory
+  cd directory
   rake db:migrate
-  rackup config.ru -p 6060
 
-  bleeding edge
+Or we could install from github (bleeding edge, may not work)
 
+  sudo gem install sinatra builder aws-s3
   git clone git://github.com/nricciar/sinatra-s3.git
-  cd sinatra-s3
-  cp s3.yml.example s3.yml (edit as needed)
+  cd sinatra-s3/
+  cp s3.yml.example s3.yml
   rake db:migrate
+
+Optional Gems
+
+ruby-git     - Enable S3 versioning support.
+rubytorrent* - Enable S3 torrent support. 
+
+* A custom version of rubytorrent is required to enable bittorrent 
+  support. see http://github.com/nricciar/rubytorrent. 
+
+Setup
+------------------------------------------------------------------
+
+Once Sinatra-S3 has been installed we can start our server and log in 
+with the default username admin and password pass@word1. 
+
   rackup config.ru -p 6060
 
-Once running log in with the username admin and password pass@word1 via the control
-center at http://127.0.0.1:6060/control/ (change your password!!)
+Once running log in with the username admin and password pass@word1 
+via the control center at http://127.0.0.1:6060/control/.  Make sure
+to change your password!

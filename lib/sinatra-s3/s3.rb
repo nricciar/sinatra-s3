@@ -29,7 +29,7 @@ rescue LoadError
 end
 
 module S3
-  VERSION = "0.98"
+  VERSION = "0.99"
   DEFAULT_PASSWORD = 'pass@word1'
 
   BUFSIZE = (4 * 1024)
