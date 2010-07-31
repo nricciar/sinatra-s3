@@ -1,14 +1,10 @@
 module S3
 
-  def self.config
-    @config ||= YAML.load_file("s3.yml")[S3::Application.environment] rescue { :db => { :adapter => 'sqlite3', :database => "db/s3.db" } }
-  end
-
   class Application < Sinatra::Base
 
     enable :static
     disable :raise_errors, :show_exceptions
-    set :environment, :production
+    set :environment, S3_ENV
     set :public, PUBLIC_PATH
 
     helpers do

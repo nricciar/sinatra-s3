@@ -1,6 +1,7 @@
 require 'rubygems'
-require 'activerecord'
+require 'active_record'
 
+require 'fileutils'
 require 'sinatra/base'
 require 'openssl'
 require 'digest/sha1'
@@ -29,13 +30,19 @@ rescue LoadError
 end
 
 module S3
+  S3_ENV = :production
+
+  def self.config
+    @config ||= YAML.load_file("s3.yml")[S3_ENV] rescue { :db => { :adapter => 'sqlite3', :database => "db/s3.db" } }
+  end
+
   VERSION = "0.99"
   DEFAULT_PASSWORD = 'pass@word1'
 
   BUFSIZE = (4 * 1024)
   ROOT_DIR = File.expand_path(File.join(File.dirname(__FILE__), '..', '..'))
-  PUBLIC_PATH = File.join(ROOT_DIR, 'public')
-  STORAGE_PATH = File.expand_path('storage') unless defined?(STORAGE_PATH)
+  PUBLIC_PATH = File.expand_path(S3.config[:public_path] || File.join(ROOT_DIR, 'public'))
+  STORAGE_PATH = File.expand_path(S3.config[:storage_path] || 'storage') unless defined?(STORAGE_PATH)
   RESOURCE_TYPES = %w[acl versioning torrent]
   CANNED_ACLS = {
     'private' => 0600,

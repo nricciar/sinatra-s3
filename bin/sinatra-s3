@@ -7,6 +7,14 @@ if ARGV.any? { |arg| %w(--version -v).any? { |flag| arg == flag } }
   exit 0
 end
 
+if ARGV.any? { |arg| %w(--help -h).any? { |flag| arg == flag } }
+  puts "sinatra-s3 [options] install_dir\n\n"
+  puts "  --version -v    Get version string"
+  puts "  --help -h       this"
+  puts "  --include-wiki  installs sinatra-s3 with wiki support"
+  exit 0
+end
+
 $APP_PATH = ARGV.last
 
 def check_install(file,data)
@@ -42,6 +50,7 @@ def verify_overwrite(file)
 end
 
 FileUtils.mkdir_p($APP_PATH)
+FileUtils.mkdir_p(File.join($APP_PATH, "public"))
 config_ru = "require 'rubygems'\nrequire 'sinatra-s3'"
 if ARGV.any? { |arg| %w(--include-wiki --wiki).any? { |flag| arg == flag } }
   check_install("wiki.rb", File.read(File.join(S3::ROOT_DIR,"examples","wiki.rb")))

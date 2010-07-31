@@ -1,17 +1,20 @@
 :development:
-  :storage: storage
+  :public_path: public
+  :storage_path: storage
   :db:
     :database: db/development.db
     :adapter: sqlite3
 
 :test:
-  :storage: test/storage
+  :public_path: public
+  :storage_path: test/storage
   :db:
     :database: db/test.db
     :adapter: sqlite3
 
 :production:
-  :storage: storage
+  :public_path: public
+  :storage_path: storage
   :db:
     :database: db/production.db
     :adapter: sqlite3

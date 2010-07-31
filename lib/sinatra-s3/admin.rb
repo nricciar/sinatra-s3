@@ -22,7 +22,7 @@ module S3
     end
 
     get %r{^/control/s/(.*)} do
-      open(File.join(PUBLIC_PATH, params[:captures].first))
+      open(File.join(ROOT_DIR, 'public', params[:captures].first))
     end
 
     get '/control/login' do
