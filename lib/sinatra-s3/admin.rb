@@ -22,6 +22,7 @@ module S3
     end
 
     get %r{^/control/s/(.*)} do
+      expires 500, :public
       open(File.join(ROOT_DIR, 'public', params[:captures].first))
     end
 
