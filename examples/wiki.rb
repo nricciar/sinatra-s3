@@ -45,7 +45,7 @@ end
 
 S3::Application.callback :when => 'before' do
   #fix some caching issues
-  if params.has_key?('edit') || params.has_key?('history') || params.has_key?('diff')
+  if params.any? { |k,v| ["edit","history","diff"].include?(k) }
     env.delete('HTTP_IF_MODIFIED_SINCE')
     env.delete('HTTP_IF_NONE_MATCH')
   end
@@ -127,12 +127,12 @@ __END__
         %div.menu
           %ul
             %li
-              %a{ :href => "#{env['PATH_INFO']}", :class => (!params.has_key?('diff') && !params.has_key?('history') && !params.has_key?('edit') ? "active" : "") } Content
+              %a{ :href => "#{env['PATH_INFO']}", :class => (!params.any? { |k,v| ["diff","history","edit"].include?(k) } ? "active" : "") } Content
             %li
               %a{ :href => "#{env['PATH_INFO']}?edit", :class => (params.has_key?('edit') ? "active" : "") } Edit
             - if defined?(Git)
               %li
-                %a{ :href => "#{env['PATH_INFO']}?history", :class => (params.has_key?('history') || params.has_key?('diff') ? "active" : "") } History
+                %a{ :href => "#{env['PATH_INFO']}?history", :class => (params.any? { |k,v| ["diff","history"].include?(k) } ? "active" : "") } History
       %h1 #{env['PATH_INFO'] =~ /\/([^\/]+)$/ ? "#{$1.gsub('_',' ')}" : "Sinatra-S3 Wiki"}
       = yield
 
