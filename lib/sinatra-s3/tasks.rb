@@ -16,7 +16,7 @@ namespace :db do
     out_dir = File.dirname(S3.config[:db][:database])
     FileUtils.mkdir_p(out_dir) unless File.exists?(out_dir)
 
-    ActiveRecord::Migrator.migrate(File.join(S3::ROOT_DIR, 'db', 'migrate'))
+    ActiveRecord::Migrator.migrate(File.join(S3::ROOT_DIR, 'db', 'migrate'), ENV["VERSION"] ? ENV["VERSION"].to_i : nil)
     num_users = User.count || 0
     if num_users == 0
       puts "** No users found, creating the `admin' user."
@@ -30,12 +30,12 @@ namespace :db do
 	:activated_at => Time.now, :superuser => 1
     end
   end
-end
 
-namespace :setup do
-  task :wiki do
+  desc "Setup Wiki"
+  task(:setup_wiki => :migrate) do
     begin
       Bucket.find_root('wiki')
+      puts "Wiki aready setup."
     rescue S3::NoSuchBucket
       wiki_owner = User.find_by_login('wiki')
       if wiki_owner.nil?
@@ -52,11 +52,13 @@ namespace :setup do
       wiki_bucket = Bucket.create(:name => 'wiki', :owner_id => wiki_owner.id, :access => 438)
       templates_bucket = Bucket.create(:name => 'templates', :owner_id => wiki_owner.id, :access => 438)
       if defined?(Git)
+	puts "** Creating the `wiki' and `templates' namespaces."
 	wiki_bucket.git_init
 	templates_bucket.git_init
       else
-	puts "Git support not found therefore Wiki history is disabled."
+	puts "!! Git support not found therefore Wiki history is disabled."
       end
+      puts "Wiki setup."
     end
   end
 end

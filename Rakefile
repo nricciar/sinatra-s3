@@ -17,6 +17,7 @@ spec = Gem::Specification.new do |s|
     FileList["db/migrate/*"].to_a +
     ["Rakefile","s3.yml.example"]
   s.require_path = "lib"
+  s.description = File.read("README")
   s.executables = ['sinatra-s3']
   s.test_files = FileList["{test}/*.rb"].to_a
   s.has_rdoc = false
