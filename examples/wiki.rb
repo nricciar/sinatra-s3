@@ -83,27 +83,12 @@ class CustomLinkHandler < WikiCloth::WikiLinkHandler
     elem.a({ :href => url, :target => "_blank", :class => "exlink" }) { |x| x << (text.blank? ? url : text) }
   end
 
-  def include_resource(resource,options=[])
-    if params[resource].nil?
-      begin
-        bucket = Bucket.find_root('templates')
-        slot = bucket.find_slot(resource)
-        unless slot.nil?
-          file = open(File.join(S3::STORAGE_PATH, slot.obj.path))
-          wiki_page = WikiCloth::WikiCloth.new({
-            :data => file.instance_of?(File) ? file.read : file.to_s,
-            :link_handler => self,
-            :params => params
-          })
-          return wiki_page.to_html
-        end
-      rescue S3::NoSuchKey
-        puts "Unknown resource #{resource}"
-      end
-    else
-      return params[resource]
-    end
+  def include_template(template)
+    bucket = Bucket.find_root('templates')
+    slot = bucket.find_slot(template.strip.gsub(/\s+/,'_'))
+    slot.nil? ? nil : File.read(File.join(S3::STORAGE_PATH, slot.obj.path))
   end
+
 end
 
 class S3::Application < Sinatra::Base; enable :inline_templates; end
