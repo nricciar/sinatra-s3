@@ -14,9 +14,8 @@ S3::Application.callback :mime_type => 'text/wiki' do
   else
     p = {}
     headers.each { |k,v| p[$1.upcase.gsub(/\-/,'_')] = v if k =~ /x-amz-(.*)/ }
-    @wiki = WikiCloth::WikiCloth.new({
+    @wiki = WikiParser.new({
       :data => response.body.respond_to?(:read) ? response.body.read : response.body.to_s,
-      :link_handler => CustomLinkHandler.new,
       :params => p
     })
     r :wiki, @slot.name.gsub(/_/,' ')
@@ -67,28 +66,26 @@ S3::Application.callback :when => 'before' do
   end
 end
 
-class CustomLinkHandler < WikiCloth::WikiLinkHandler
-  def url_for(page)
+class WikiParser < WikiCloth::Parser
+  url_for do |page|
     page = page.strip.gsub(/\s+/,'_')
     page = "/#{$1.downcase}/#{$2}" if page =~ /^([A-Za-z]+):(.*)$/
     page
   end
 
-  def link_attributes_for(page)
-     { :href => url_for(page) }
+  external_link do |url,text|
+    "<a href=\"#{url}\" target=\"_blank\" class=\"exlink\">#{text.blank? ? url : text}</a>"
   end
 
-  def external_link(url,text)
-    self.external_links << url
-    elem.a({ :href => url, :target => "_blank", :class => "exlink" }) { |x| x << (text.blank? ? url : text) }
+  template do |template|
+    begin
+      bucket = Bucket.find_root('templates')
+      slot = bucket.find_slot(template.strip.gsub(/\s+/,'_'))
+      slot.nil? ? nil : File.read(File.join(S3::STORAGE_PATH, slot.obj.path))
+    rescue S3::NoSuchKey
+      nil
+    end
   end
-
-  def include_template(template)
-    bucket = Bucket.find_root('templates')
-    slot = bucket.find_slot(template.strip.gsub(/\s+/,'_'))
-    slot.nil? ? nil : File.read(File.join(S3::STORAGE_PATH, slot.obj.path))
-  end
-
 end
 
 class S3::Application < Sinatra::Base; enable :inline_templates; end
