@@ -498,8 +498,13 @@ module S3
       end
     end
 
+    def disable_callbacks_for_request
+      @callbacks_disabled = true
+    end
+
     protected
     def run_callback_for(args = {})
+      return if @callbacks_disabled
       @@callbacks ||= {}
       block = nil
 

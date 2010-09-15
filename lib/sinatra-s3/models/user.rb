@@ -13,6 +13,9 @@ class User < ActiveRecord::Base
   validates_presence_of :password
   validates_confirmation_of :password
 
+  before_save :update_user
+  after_save :update_password_field
+
   def destroy
     self.deleted = 1
     self.save
@@ -21,14 +24,14 @@ class User < ActiveRecord::Base
   attr_accessor :skip_before_save
 
   protected
-  def before_save
+  def update_user
     unless self.skip_before_save
       @password_clean = self.password
       self.password = hmac_sha1(self.password, self.secret)
     end
   end
 
-  def after_save
+  def update_password_field
     self.password = @password_clean
   end
 
