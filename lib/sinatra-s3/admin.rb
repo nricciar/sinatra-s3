@@ -511,7 +511,7 @@ __END__
     %input{ :type => "checkbox", :name => "user[superuser]", :value => @usero.superuser }
   %div.required
     %label{ :for => "user[password]" } Password
-    %input.fixed{ :type => "password", :name => "user[email]" }
+    %input.fixed{ :type => "password", :name => "user[password]" }
   %div.required
     %label{ :for => "user[password_confirmation]" } Password again
     %input.fixed{ :type => "password", :name => "user[password_confirmation]" }
@@ -535,7 +535,7 @@ __END__
       %input{ :type => "checkbox", :name => "user[superuser]", :value => @usero.superuser }
   %div.required
     %label{ :for => "user[password]" } Password
-    %input.fixed{ :type => "password", :name => "user[email]" }
+    %input.fixed{ :type => "password", :name => "user[password]" }
   %div.required
     %label{ :for => "user[password_confirmation]" } Password again
     %input.fixed{ :type => "password", :name => "user[password_confirmation]" }
