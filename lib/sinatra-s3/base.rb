@@ -305,7 +305,7 @@ module S3
       raise MissingContentLength unless env['CONTENT_LENGTH']
 
       if params.has_key?('acl')
-	slot = bucket.find_slot(oid)
+	slot = bucket.find_slot(params[:captures].last)
 	slot.grant(requested_acl(slot))
 	headers 'ETag' => slot.etag, 'Content-Length' => 0.to_s
 	body ""
