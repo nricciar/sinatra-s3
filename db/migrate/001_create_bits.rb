@@ -13,7 +13,7 @@ class CreateBits < ActiveRecord::Migration
       t.column :updated_at, :timestamp
       t.column :access,    :integer
       t.column :meta,      :text
-      t.column :obj,       :text
+      #t.column :obj,       :text
       t.column :size,      :integer, :default => 0
       t.column :version,   :string
       t.column :deleted,   :integer, :default => 0

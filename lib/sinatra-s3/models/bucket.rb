@@ -1,7 +1,7 @@
 class Bucket < Bit
 
-  named_scope :user_buckets, lambda { |uid| { :conditions => ['parent_id IS NULL AND owner_id = ?', uid ], :order => "name" } }
-  named_scope :root, lambda { |name| { :conditions => ['deleted = 0 AND parent_id IS NULL AND name = ?', name] } }
+  scope :user_buckets, lambda { |uid| { :conditions => ['parent_id IS NULL AND owner_id = ?', uid ], :order => "name" } }
+  scope :root, lambda { |name| { :conditions => ['deleted = 0 AND parent_id IS NULL AND name = ?', name] } }
 
   def items(marker,prefix)
     Slot.bucket(self).items(marker,prefix)
@@ -63,8 +63,8 @@ class Bucket < Bit
     i = 0
     Slot.find(:all, :conditions => ['parent_id = ?', self.id]).each do |slot|
       miif = RubyTorrent::MetaInfoInfoFile.new
-      miif.length = slot.obj.size
-      miif.md5sum = slot.obj.md5
+      miif.length = slot.file_info.size
+      miif.md5sum = slot.file_info.md5
       miif.path = File.split(slot.name)
       mii.files << miif
       files << slot.fullpath

@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'active_record'
 require 'active_record/railtie'
+require 'active_support/core_ext' 
 
 require 'fileutils'
 require 'sinatra/base'
