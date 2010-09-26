@@ -1,0 +1,29 @@
+%form.create{ :method => "post", :style => "text-align:left" }
+  = preserve errors_for(@slot)
+  %table
+    %thead
+      %tr
+        %th Key
+        %th Value
+    %tbody
+      - if @slot.meta.empty?
+        %tr
+          %td{ :colspan => "2", :style => "padding:8px;text-align:center" } No Metadata for #{@slot.name}
+      - else
+        - @slot.meta.each do |k,v|
+          %tr
+            %td #{k}
+            %td
+              %input{ :name => "m[#{k}]", :type => "text", :value => v, :style => "width:100%" }
+    %thead
+      %tr
+        %th{ :colspan => "2" } New Key
+    %tbody
+      %tr
+        %td
+          %input{ :name => "meta[key]", :type => "text", :style => "width:100%" }
+        %td
+          %input{ :name => "meta[value]", :type => "text", :style => "width:100%" }
+  %div{ :style => "text-align:center;margin-top:15px" }
+    %input{ :type => "submit", :value => "Update" }
+

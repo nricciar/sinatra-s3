@@ -1,0 +1,12 @@
+%table
+  %thead
+    %tr
+      %th Commit Log For #{@file.name}
+  %tbody
+    - @versions.each do |version|
+      %tr
+        %td
+          %div
+            %a{ :target => "_blank", :href => signed_url("/#{@bucket.name}/#{@file.name}") + "&version-id=#{version.sha}" } #{version.sha}
+          %div On: #{version.date}
+          %div By: #{version.author.name} <#{version.author.email}>

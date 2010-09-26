@@ -1,0 +1,30 @@
+%table
+  %thead
+    %tr
+      %th For
+      %th Access
+  %tbody
+    - @slot.acl_list.each_pair do |key,acl|
+      %tr
+        %td #{acl[:type] == "CanonicalUser" ? "#{acl[:id]} (#{acl[:name]})" : acl[:uri].split("/").last}
+        %td #{acl[:access]}
+%div{ :style => "text-align:left;margin-top:10px" }
+  %h3 Modify File Access
+  %form.create{ :method => "post" }
+    %div.required
+      %label{ :for => "acl_type" } For
+      %select#acl_type{ :name => "acl[type]", :onchange => "$('user_id_box').style.display = this.value == 'email' ? 'block' : 'none';" }
+        %option{ :value => "http://acs.amazonaws.com/groups/global/AllUsers" } AllUsers
+        %option{ :value => "http://acs.amazonaws.com/groups/global/AuthenticatedUsers" } AuthenticatedUsers
+        %option{ :value => "email" } By ID/Email
+    %div#user_id_box.required{ :style => "display:none" }
+      %label{ :for => "user_id" } User ID/Email
+      %input#user_id{ :type => "text", :name => "acl[user_id]" }
+    %div.required
+      %label{ :for => "user_access" } Access
+      %select#user_access{ :name => "acl[access]" }
+        %option{ :value => "READ" } READ
+        %option{ :value => "READ_ACP" } READ_ACP
+        %option{ :value => "WRITE" } WRITE
+        %option{ :value => "WRITE_ACP" } WRITE_ACP
+    %input{ :type => "submit", :value => "Update" }
