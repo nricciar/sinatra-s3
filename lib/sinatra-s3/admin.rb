@@ -1,4 +1,5 @@
 require 'aws/s3'
+require "sinatra/reloader"
 
 module S3
 
@@ -12,8 +13,11 @@ module S3
     set :sessions, :on
     set :environment, S3_ENV
     set :views, File.join(File.dirname(__FILE__), 'views')
-    
-    #enable :inline_templates
+
+    configure(:development) do
+      register Sinatra::Reloader
+      also_reload "./lib/**/*.rb"
+    end
 
     before do
       ActiveRecord::Base.verify_active_connections!

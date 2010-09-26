@@ -1,3 +1,5 @@
+require "sinatra/reloader"
+
 module S3
 
   class Application < Sinatra::Base
@@ -14,6 +16,11 @@ module S3
 
     configure do
       ActiveRecord::Base.establish_connection(S3.config[:db]) 
+    end
+
+    configure(:development) do
+      register Sinatra::Reloader
+      also_reload "./lib/**/*.rb"
     end
 
     before do
