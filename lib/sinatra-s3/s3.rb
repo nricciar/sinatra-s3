@@ -7,7 +7,11 @@ require 'sinatra/base'
 require 'openssl'
 require 'base64'
 require 'digest/sha1'
-require 'md5'
+if RUBY_VERSION < '1.9'
+  require 'md5'
+else
+  require 'digest/md5'
+end
 require 'haml'
 
 begin

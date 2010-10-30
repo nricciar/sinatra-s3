@@ -10,10 +10,10 @@ module S3
 
     def number_to_human_size(size)
       case
-      when size < 1.kilobyte: '%d Bytes' % size
-      when size < 1.megabyte: '%.1f KB'  % (size / 1.0.kilobyte)
-      when size < 1.gigabyte: '%.1f MB'  % (size / 1.0.megabyte)
-      when size < 1.terabyte: '%.1f GB'  % (size / 1.0.gigabyte)
+      when size < 1.kilobyte then '%d Bytes' % size
+      when size < 1.megabyte then '%.1f KB'  % (size / 1.0.kilobyte)
+      when size < 1.gigabyte then '%.1f MB'  % (size / 1.0.megabyte)
+      when size < 1.terabyte then '%.1f GB'  % (size / 1.0.gigabyte)
       else                    '%.1f TB'  % (size / 1.0.terabyte)
       end.sub('.0', '')
     rescue
