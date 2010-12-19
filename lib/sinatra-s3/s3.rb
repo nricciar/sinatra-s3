@@ -41,7 +41,12 @@ module S3
   S3_ENV = :production
 
   def self.config
-    @config ||= YAML.load_file("s3.yml")[S3_ENV] rescue { :db => { :adapter => 'sqlite3', :database => "db/s3.db" } }
+    @config ||= YAML.load_file(self.config_path)[S3_ENV] rescue { :db => { :adapter => 'sqlite3', :database => "db/s3.db" } }
+  end
+
+  def self.config_path
+    return ENV['S3_CONF_PATH'] if ENV['S3_CONF_PATH'] && File.exists?(ENV['S3_CONF_PATH'])
+    "s3.yml"
   end
 
   VERSION = "0.99"
