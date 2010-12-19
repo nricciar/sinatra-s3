@@ -1,3 +1,7 @@
+:auth:
+  :database: db/users.db
+  :adapter: sqlite3
+
 :development:
   :public_path: public
   :storage_path: storage

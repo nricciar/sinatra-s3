@@ -4,7 +4,7 @@ module S3
   module AdminHelpers
 
     def login_required
-      @user = User.find(session[:user_id]) unless session[:user_id].nil?
+      @user = AWSAuth::User.find(session[:user_id]) unless session[:user_id].nil?
       redirect '/control/login' if @user.nil?
     end
 

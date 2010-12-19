@@ -26,24 +26,7 @@ module S3
 	@meta[$1] = v if k =~ /^http-x-amz-meta-([-\w]+)$/
       end
 
-      auth, key_s, secret_s = *env['HTTP_AUTHORIZATION'].to_s.match(/^AWS (\w+):(.+)$/)
-      date_s = env['HTTP_X_AMZ_DATE'] || env['HTTP_DATE']
-      if request.params.has_key?('Signature') and Time.at(request['Expires'].to_i) >= Time.now
-	key_s, secret_s, date_s = request['AWSAccessKeyId'], request['Signature'], request['Expires']
-      end
-      uri = env['PATH_INFO']
-      uri += "?" + env['QUERY_STRING'] if RESOURCE_TYPES.include?(env['QUERY_STRING'])
-      canonical = [env['REQUEST_METHOD'], env['HTTP_CONTENT_MD5'], env['CONTENT_TYPE'],
-	date_s, uri]
-      @amz.sort.each do |k, v|
-	canonical[-1,0] = "x-amz-#{k}:#{v}"
-      end
-
-      @user = User.find_by_key key_s
-      if (@user and secret_s != hmac_sha1(@user.secret, canonical.map{|v|v.to_s.strip} * "\n")) || (@user and @user.deleted == 1)
-	raise BadAuthentication
-      end
-
+      @user = env['AWS_AUTH_USER'] # aws-auth
       @request_id = Time.now.to_i
       headers 'x-amz-request-id' => @request_id.to_s
     end
@@ -92,7 +75,7 @@ module S3
 
       query = bucket.items(params['marker'],params['prefix'])
       slot_count = query.count
-      contents = query.find(:all, :include => :owner, 
+      contents = query.find(:all, 
 	:limit => params['max-keys'].blank? ? 1000 : params['max-keys'])
 
       if params['delimiter']

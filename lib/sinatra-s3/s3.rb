@@ -1,6 +1,6 @@
 require 'rubygems'
 require 'active_record'
-require 'active_record/railtie'
+#require 'active_record/railtie'
 
 require 'fileutils'
 require 'sinatra/base'
@@ -13,6 +13,8 @@ else
   require 'digest/md5'
 end
 require 'haml'
+
+require 'aws-auth'
 
 begin
   require "git"
@@ -66,5 +68,5 @@ module S3
   POPUP = %{window.open(this.href,'changelog','height=600,width=500,scrollbars=1');return false;}
 end
 
-%w(file_info bit bucket git_bucket slot user torrent torrent_peer).each {|r| require "#{File.dirname(__FILE__)}/models/#{r}" }
+%w(file_info bit bucket git_bucket slot torrent torrent_peer).each {|r| require "#{File.dirname(__FILE__)}/models/#{r}" }
 %w(ext helpers errors admin base tracker).each {|r| require "#{File.dirname(__FILE__)}/#{r}"}

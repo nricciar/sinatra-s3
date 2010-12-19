@@ -35,37 +35,6 @@ module S3
       body xml.target!
     end
 
-    # Convenient method for generating a SHA1 digest.
-    def hmac_sha1(key, s)
-      ipad = [].fill(0x36, 0, 64)
-      opad = [].fill(0x5C, 0, 64)
-      key = key.unpack("C*")
-      if key.length < 64 then
-        key += [].fill(0, 0, 64-key.length)
-      end
-
-      inner = []
-      64.times { |i| inner.push(key[i] ^ ipad[i]) }
-      inner += s.unpack("C*")
-
-      outer = []
-      64.times { |i| outer.push(key[i] ^ opad[i]) }
-      outer = outer.pack("c*")
-      outer += Digest::SHA1.digest(inner.pack("c*"))
-
-      return Base64::encode64(Digest::SHA1.digest(outer)).chomp
-    end
-
-    def generate_secret
-      abc = %{ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz}
-      (1..40).map { abc[rand(abc.size),1] }.join
-    end
-
-    def generate_key
-      abc = %{ABCDEF0123456789}
-      (1..20).map { abc[rand(abc.size),1] }.join
-    end
-
     def get_prefix(c)
       c.name.sub(params['prefix'], '').split(params['delimiter'])[0] + params['delimiter']
     end

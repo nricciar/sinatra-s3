@@ -4,7 +4,8 @@ require 'rack/test'
 require 'aws/s3'
 require File.join(File.dirname(__FILE__), '..','lib','sinatra-s3')
 
-admin = User.find_by_login('admin')
+AWSAuth::User.establish_connection(AWSAuth::Base.config[:auth])
+admin = AWSAuth::User.find_by_login('admin')
 
 AWS::S3::Base.establish_connection!(
   :access_key_id     => admin.key,

@@ -70,7 +70,7 @@ class S3ApiTest < Test::Unit::TestCase
     AWS::S3::Bucket.create(bucket_name, { :access => :public_read })
     bucket = AWS::S3::Bucket.find(bucket_name)
     policy = bucket.acl
-    assert policy.owner.id == User.find_by_login('admin').key
+    assert policy.owner.id == AWSAuth::User.find_by_login('admin').key
     assert policy.grants.include?(:public_read)
 
     AWS::S3::Bucket.delete(bucket_name, :force => true)
@@ -95,8 +95,8 @@ class S3ApiTest < Test::Unit::TestCase
     assert !last_response.body.include?('<Versioning>')
     assert last_response.body.include?('<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"></VersioningConfiguration>')
 
-    @user = User.find_by_login('admin')
-    sts = hmac_sha1(@user.secret, "PUT\n\ntext/plain\n\n/#{bucket_name}/?versioning")
+    @user = AWSAuth::User.find_by_login('admin')
+    sts = AWSAuth::Base.hmac_sha1(@user.secret, "PUT\n\ntext/plain\n\n/#{bucket_name}/?versioning")
     aws_header = "AWS " + "#{@user.key}:#{sts}"
 
     header "Content-Type", "text/plain"

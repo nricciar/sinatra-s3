@@ -59,7 +59,7 @@ module S3
 
             case grantee.attributes["type"]
             when "CanonicalUser"
-              user_check = User.find_by_key(grantee.elements["ID"].text)
+              user_check = AWSAuth::User.find_by_key(grantee.elements["ID"].text)
               unless user_check.nil? || slot.owner.id == user_check.id
                 update_user_access(slot,user_check,new_access)
               end
@@ -74,7 +74,7 @@ module S3
               end
               slot.save()
             when "AmazonCustomerByEmail"
-              user_check = User.find_by_email(grantee.elements["EmailAddress"].text)
+              user_check = AWSAuth::User.find_by_email(grantee.elements["EmailAddress"].text)
               unless user_check.nil? || slot.owner.id == user_check.id
                 update_user_access(slot,user_check,new_access)
               end
