@@ -56,7 +56,7 @@ module AWS
       end
 
       tmpf = params['upfile'][:tempfile]
-      readlen, md5 = 0, MD5.new
+      readlen, md5 = 0, Digest::MD5.new
       while part = tmpf.read(::S3::BUFSIZE)
 	readlen += part.size
 	md5 << part

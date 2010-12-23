@@ -1,7 +1,7 @@
 class Bucket < Bit
 
-  named_scope :user_buckets, lambda { |uid| { :conditions => ['parent_id IS NULL AND owner_id = ?', uid ], :order => "name" } }
-  named_scope :root, lambda { |name| { :conditions => ['deleted = 0 AND parent_id IS NULL AND name = ?', name] } }
+  scope :user_buckets, lambda { |uid| { :conditions => ['parent_id IS NULL AND owner_id = ?', uid ], :order => "name" } }
+  scope :root, lambda { |name| { :conditions => ['deleted = 0 AND parent_id IS NULL AND name = ?', name] } }
 
   def items(marker,prefix)
     Slot.bucket(self).items(marker,prefix)

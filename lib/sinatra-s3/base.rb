@@ -321,7 +321,7 @@ module S3
       else
 	temp_path = env['rack.input'][:path] rescue nil
 	readlen = 0
-	md5 = MD5.new
+	md5 = Digest::MD5.new
 
 	Tempfile.open(File.basename(params[:captures].last)) do |tmpf|
 	  temp_path ||= tmpf.path

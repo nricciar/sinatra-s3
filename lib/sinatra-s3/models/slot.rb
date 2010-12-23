@@ -1,7 +1,7 @@
 class Slot < Bit
 
-  named_scope :bucket, lambda { |bucket| { :conditions => [ 'bits.deleted = 0 AND parent_id = ?', bucket.id ], :order => "name" } }
-  named_scope :items, lambda { |marker,prefix| { :conditions => condition_string(marker,prefix) } }
+  scope :bucket, lambda { |bucket| { :conditions => [ 'bits.deleted = 0 AND parent_id = ?', bucket.id ], :order => "name" } }
+  scope :items, lambda { |marker,prefix| { :conditions => condition_string(marker,prefix) } }
 
   def fullpath; File.join(S3::STORAGE_PATH, obj.path) end
 
@@ -11,7 +11,7 @@ class Slot < Bit
     elsif self.obj.respond_to? :md5
       self.obj.md5
     else
-      %{"#{MD5.md5(self.obj)}"}
+      %{"#{Digest::MD5.md5(self.obj)}"}
     end
   end
 
