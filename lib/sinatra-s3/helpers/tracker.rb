@@ -1,5 +1,3 @@
-require 'aws/s3'
-
 module S3
   module TrackerHelper
 

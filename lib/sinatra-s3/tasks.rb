@@ -10,7 +10,7 @@ namespace :db do
   end
 
   desc "Migrate the database"
-  task(:migrate => :environment) do
+  task(:migrate => [:auth, :environment]) do
     ActiveRecord::Base.logger = Logger.new(STDOUT)
     ActiveRecord::Migration.verbose = true
 

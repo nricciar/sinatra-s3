@@ -50,8 +50,6 @@ module S3
   end
 
   VERSION = "0.99"
-  DEFAULT_PASSWORD = 'pass@word1'
-
   BUFSIZE = (4 * 1024)
   ROOT_DIR = File.expand_path(File.join(File.dirname(__FILE__), '..', '..'))
   PUBLIC_PATH = File.expand_path(S3.config[:public_path] || File.join(ROOT_DIR, 'public'))

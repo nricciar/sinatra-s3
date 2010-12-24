@@ -1,5 +1,3 @@
-require 'aws/s3'
-
 module AWS
 
   class Admin < Sinatra::Base

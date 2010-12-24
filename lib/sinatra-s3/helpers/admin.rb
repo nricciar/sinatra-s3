@@ -1,4 +1,4 @@
-require 'aws/s3'
+require 'net/http'
 
 module S3
   module AdminHelpers
@@ -20,9 +20,11 @@ module S3
       nil
     end
 
-    def signed_url(path)
-      url = "#{path}?"
-      url + AWS::S3::Authentication::QueryString.new(Net::HTTP::Get.new(path), @user.key, @user.secret)
+    def signed_url(url)
+      time_s = Time.now + 900
+      canonical = ['GET',nil,nil,time_s.to_i.to_s,url]
+      signature = AWSAuth::Base.hmac_sha1(@user.secret, canonical.map{|v|v.to_s.strip} * "\n")
+      "#{url}?AWSAccessKeyId=#{@user.key}&Signature=#{signature}&Expires=#{time_s.to_i}"
     end
 
     def errors_for(model)
