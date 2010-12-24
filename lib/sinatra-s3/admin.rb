@@ -41,7 +41,7 @@ module AWS
       login_required
       @bucket = Bucket.find_root(params[:bucket])
       only_can_read @bucket
-      @files = Slot.find :all, :conditions => ['deleted = 0 AND parent_id = ?', @bucket.id], :order => 'name'
+      @files = Slot.find :all, :conditions => ['deleted = 0 AND parent_id = ?', @bucket.id], :include => :torrent, :order => 'name'
       r :files, "/#{@bucket.name}"
     end
 
@@ -303,8 +303,8 @@ __END__
         %td
           %a{ :href => "javascript:///", :onclick => "$('details-#{file.id}').toggle()" } #{file.name}
           %div.details{ :id => "details-#{file.id}", :style => "display:none" }
-            - if @bucket.versioning_enabled? && !file.git_object.nil?
-              %p Revision: #{file.git_object.objectish}
+            - if @bucket.versioning_enabled?
+              %p Revision: #{file.version}
             - if file.torrent
               %p #{file.torrent.seeders} seeders &bull; #{file.torrent.leechers} leechers &bull; #{file.torrent.total} downloads
             %p Last modified on #{file.updated_at}
