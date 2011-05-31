@@ -1,3 +1,7 @@
+require 'rubygems'
+require 'bundler'
+Bundler.require
+
 $:.unshift "./lib"
 require 'rake'
 require 'rake/testtask'
@@ -5,7 +9,7 @@ require 'rake/gempackagetask'
 require 'sinatra-s3'
 require 'sinatra-s3/tasks'
 
-spec = Gem::Specification.new do |s| 
+spec = Gem::Specification.new do |s|
   s.name = "sinatra-s3"
   s.version = S3::VERSION
   s.author = "David Ricciardi"
@@ -27,9 +31,9 @@ spec = Gem::Specification.new do |s|
   s.add_dependency("haml", ">= 2.2.15")
 end
 
-Rake::GemPackageTask.new(spec) do |pkg| 
-  pkg.need_tar = true 
-end 
+Rake::GemPackageTask.new(spec) do |pkg|
+  pkg.need_tar = true
+end
 
 namespace :test do
   find_file = lambda do |name|

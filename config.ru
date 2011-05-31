@@ -1,3 +1,8 @@
+require 'rubygems'
+require 'bundler'
+
+Bundler.require
+
 $:.unshift "./lib"
 require 'sinatra-s3'
 
