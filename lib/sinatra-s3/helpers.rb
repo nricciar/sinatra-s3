@@ -20,10 +20,10 @@ module S3
     protected
     def load_buckets
       @buckets = Bucket.find_by_sql [%{
-               SELECT b.*, COUNT(c.id) AS total_children
+               SELECT b.id, b.name, b.updated_at, b.access, COUNT(c.id) AS total_children
                FROM bits b LEFT JOIN bits c ON c.parent_id = b.id AND c.deleted = 0
                WHERE b.deleted = 0 AND b.parent_id IS NULL AND b.owner_id = ?
-               GROUP BY b.id ORDER BY b.name}, @user.id]
+               GROUP BY b.id, b.name, b.updated_at, b.access ORDER BY b.name}, @user.id]
       @bucket = Bucket.new(:owner_id => @user.id, :access => CANNED_ACLS['private'])
     end
 

@@ -98,7 +98,7 @@ module S3
       end
 
       tmpf = params['upfile'][:tempfile]
-      readlen, md5 = 0, MD5.new
+      readlen, md5 = 0, Digest::MD5.new
       while part = tmpf.read(BUFSIZE)
         readlen += part.size
         md5 << part
@@ -132,7 +132,7 @@ module S3
 
         slot.update_attributes(:owner_id => @user.id, :meta => mdata, :size => fileinfo.size)
         slot.file_info.attributes = fileinfo.attributes
-        
+
         FileUtils.mv(tmpf.path, file_path,{ :force => true })
       rescue NoSuchKey
         fileinfo.path = File.join(params[:bucket], rand(10000).to_s(36) + '_' + File.basename(tmpf.path))
@@ -144,7 +144,7 @@ module S3
         slot = Slot.create(:name => params['fname'], :owner_id => @user.id, :meta => mdata, :size => fileinfo.size)
         slot.file_info = fileinfo
         slot.grant(:access => params['facl'].to_i)
-        
+
         @bucket.add_child(slot)
       end
 

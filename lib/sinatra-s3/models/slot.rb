@@ -11,7 +11,7 @@ class Slot < Bit
     elsif self.file_info.md5
       self.file_info.md5
     else
-      %{"#{MD5.md5(self.file_info)}"}
+      %{"#{Digest::MD5.md5(self.file_info)}"}
     end
   end
 

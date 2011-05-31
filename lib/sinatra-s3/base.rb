@@ -15,7 +15,7 @@ module S3
     end
 
     configure do
-      ActiveRecord::Base.establish_connection(S3.config[:db]) 
+      ActiveRecord::Base.establish_connection(S3.config[:db])
     end
 
     configure(:development) do
@@ -99,7 +99,7 @@ module S3
 
       query = bucket.items(params['marker'],params['prefix'])
       slot_count = query.count
-      contents = query.find(:all, :include => :owner, 
+      contents = query.find(:all, :include => :owner,
 	:limit => params['max-keys'].blank? ? 1000 : params['max-keys'])
 
       if params['delimiter']
@@ -229,7 +229,7 @@ module S3
 	h.merge!({ "x-amz-meta-#{k}" => v })
       }
 
-      h.merge!({ 'Content-Disposition' => (@slot.file_info.disposition.nil? ? "inline" : @slot.file_info.disposition), 'Content-Length' => (@revision_file.nil? ? 
+      h.merge!({ 'Content-Disposition' => (@slot.file_info.disposition.nil? ? "inline" : @slot.file_info.disposition), 'Content-Length' => (@revision_file.nil? ?
 	  @slot.file_info.size : @revision_file.length).to_s, 'Content-Type' => @slot.file_info.mime_type })
 
       h['Content-Type'] ||= 'binary/octet-stream'
@@ -339,7 +339,7 @@ module S3
       else
 	temp_path = env['rack.input'][:path] rescue nil
 	readlen = 0
-	md5 = MD5.new
+	md5 = Digest::MD5.new
 
 	Tempfile.open(File.basename(params[:captures].last)) do |tmpf|
 	  temp_path ||= tmpf.path
@@ -396,7 +396,7 @@ module S3
 	end
 	slot.update_attributes(:owner_id => owner_id, :meta => meta,  :size => fileinfo.size)
         slot.file_info.attributes = fileinfo.attributes
-	
+
       rescue NoSuchKey
 	if source_slot.nil?
 	  fileinfo.path = File.join(params[:captures].first, rand(10000).to_s(36) + '_' + File.basename(temp_path))
