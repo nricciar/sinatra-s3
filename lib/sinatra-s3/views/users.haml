@@ -1,0 +1,42 @@
+%table
+  %thead
+    %tr
+      %th Login
+      %th Activated On
+      %th Total Storage
+      %th Actions
+  %tbody
+    - @users.each do |user|
+      %tr
+        %th
+          %a{ :href => "/control/users/#{user.login}" } #{user.login}
+        %td #{user.activated_at}
+        %td #{number_to_human_size(Bit.sum(:size, :conditions => [ 'owner_id = ?', user.id ]))}
+        %td
+          %a{ :href => "/control/users/delete/#{user.login}", :onclick => S3::POST, :title => "Delete user #{user.login}" } Delete
+%h3 Create a User
+%form.create{ :action => "/control/users", :method => "post" }
+  = preserve errors_for(@usero)
+  %div.required
+    %label{ :for => "user[login]" } Login
+    %input.large{ :type => "text", :value => @usero.login, :name => "user[login]" }
+  %div.required.inline
+    %label{ :for => "user[superuser]" } Is a super-admin?
+    %input{ :type => "checkbox", :name => "user[superuser]", :value => @usero.superuser }
+  %div.required
+    %label{ :for => "user[password]" } Password
+    %input.fixed{ :type => "password", :name => "user[password]" }
+  %div.required
+    %label{ :for => "user[password_confirmation]" } Password again
+    %input.fixed{ :type => "password", :name => "user[password_confirmation]" }
+  %div.required
+    %label{ :for => "user[email]" } Email
+    %input{ :type => "text", :value => @usero.email, :name => "user[email]" }
+  %div.required
+    %label{ :for => "user[key]" } Key (must be unique)
+    %input.fixed.long{ :type => "text", :value => (@usero.key || generate_key), :name => "user[key]" }
+  %div.required
+    %label{ :for => "user[secret]" } Secret
+    %input.fixed.long{ :type => "text", :value => (@usero.secret || generate_secret), :name => "user[secret]" }
+  %input.newuser{ :type => "submit", :value => "Create", :name => "newuser" }
+

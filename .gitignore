@@ -1,4 +1,5 @@
 .bundle
 s3.yml
 config/unicorn.rb
-storage
+storage/*
+db/*.db

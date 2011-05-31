@@ -63,8 +63,8 @@ class Bucket < Bit
     i = 0
     Slot.find(:all, :conditions => ['parent_id = ?', self.id]).each do |slot|
       miif = RubyTorrent::MetaInfoInfoFile.new
-      miif.length = slot.obj.size
-      miif.md5sum = slot.obj.md5
+      miif.length = slot.file_info.size
+      miif.md5sum = slot.file_info.md5
       miif.path = File.split(slot.name)
       mii.files << miif
       files << slot.fullpath

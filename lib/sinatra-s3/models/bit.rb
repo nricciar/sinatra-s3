@@ -3,7 +3,7 @@ class Bit < ActiveRecord::Base
   has_many :bits_users
 
   serialize :meta
-  serialize :obj
+  #serialize :obj
 
   belongs_to :parent, :class_name => 'Bit', :foreign_key => 'parent_id'
   belongs_to :owner, :class_name => 'User', :foreign_key => 'owner_id'
@@ -11,6 +11,7 @@ class Bit < ActiveRecord::Base
   validates_length_of :name, :within => 3..255
 
   has_one :torrent
+  has_one :file_info
 
   def git_repository
     versioning_enabled? ? Git.open(git_repository_path) : nil
@@ -19,7 +20,7 @@ class Bit < ActiveRecord::Base
   def fullpath; File.join(S3::STORAGE_PATH, name) end
 
   def git_repository_path
-    self.obj ? File.join(File.dirname(self.fullpath)) : self.fullpath
+    self.file_info ? File.join(File.dirname(self.fullpath)) : self.fullpath
   end
 
   def versioning_enabled?
@@ -29,7 +30,7 @@ class Bit < ActiveRecord::Base
   end
 
   def git_object
-    git_repository.log.path(File.basename(self.obj.path)).first if versioning_enabled? && self.obj
+    git_repository.log.path(File.basename(self.file_info.path)).first if versioning_enabled? && self.file_info
   end
 
   def objectish

@@ -1,0 +1,9 @@
+%html
+  %head
+    %title #{@title}
+    %style{ :type => "text/css" } 
+      @import '/control/s/css/control.css';
+    %script{ :language => 'javascript', :src => '/control/s/js/prototype.js' }
+  %body
+    %div#content
+      = yield
