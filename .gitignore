@@ -1,2 +1,3 @@
 .bundle
 s3.yml
+config/unicorn.rb
