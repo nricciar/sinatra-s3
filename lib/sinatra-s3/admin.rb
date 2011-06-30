@@ -50,11 +50,30 @@ module S3
         @user = User.new
         @user.errors.add(:login, 'not found')
       end
-      login_view
+      r :login, "Login"
+#      login_view
+    end
+
+    get '/control/key' do
+      redirect '/control/login' if session[:user_id].nil?
+      r :key, "Key Required"
+    end
+
+    post '/control/key' do
+      @user = User.find(session[:user_id])
+      ga = GoogleAuthenticator.new(@user.google_auth_key)
+      if params[:key] && ga.key_valid?(params[:key])
+        session[:google_auth] = 1
+        redirect '/control/buckets'
+      else
+        @user.errors.add(:key, "is invalid")
+      end
+      r :key, "Key Required"
     end
 
     get '/control/logout' do
       session[:user_id] = nil
+      session[:google_auth] = nil
       redirect '/control'
     end
 
@@ -213,6 +232,36 @@ module S3
       login_required
       @usero = @user
       r :profile, "Your Profile"
+    end
+
+    get "/control/auth/?" do
+      login_required
+      session[:google_auth_key] ||= GoogleAuthenticator.generate_secret_key
+      @ga = GoogleAuthenticator.new(session[:google_auth_key])
+      @usero = @user
+      r :auth, "Authentication"
+    end
+
+    post "/control/auth/?" do
+      login_required
+      if params[:key]
+        if defined?(GoogleAuthenticator) && params[:key]
+          @ga = GoogleAuthenticator.new(session[:google_auth_key])
+          if @ga.key_valid?(params[:key].strip)
+            @user.skip_before_save = true
+            @user.google_auth_key = @ga.secret_key
+            session[:google_auth] = 1
+            @user.save()
+          else
+            @user.errors.add(:key, "is invalid")
+          end
+        end
+      elsif params[:remove_google_auth].to_i == 1
+        @user.skip_before_save = true
+        @user.google_auth_key = nil
+        @user.save()
+      end
+      redirect "/control/auth"
     end
 
     post "/control/profile/?" do

@@ -16,6 +16,13 @@ end
 require 'haml'
 
 begin
+  require "google_authenticator_auth"
+  puts "-- Google Authenticator support found, two factor authentication enabled." if $VERBOSE
+rescue LoadError
+  puts "-- Google Authenticator support not found, two factor authentication disabled."
+end
+
+begin
   require "git"
   puts "-- Git support found, versioning support enabled." if $VERBOSE
 rescue LoadError

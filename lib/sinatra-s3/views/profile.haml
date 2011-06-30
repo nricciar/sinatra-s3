@@ -3,10 +3,16 @@
   - if @user.superuser?
     %div.required.inline
       %label{ :for => "user[superuser]" } Is a super-admin?
-      %input{ :type => "checkbox", :name => "user[superuser]", :value => @usero.superuser }
+      %input{ :type => "hidden", :name => "user[superuser]", :value => 0 }
+      %input{ :type => "checkbox", :name => "user[superuser]", :value => 1, :checked => @usero.superuser? }
   %div.required
     %label{ :for => "user[password]" } Password
     %input.fixed{ :type => "password", :name => "user[password]" }
+    - if defined?(GoogleAuthenticator)
+      %small
+        [
+        %a{ :href => "/control/auth" }= @user.google_auth_key.nil? ? "Add Two Factor Authentication" : "Remove Two Factor Authentication"
+        ]
   %div.required
     %label{ :for => "user[password_confirmation]" } Password again
     %input.fixed{ :type => "password", :name => "user[password_confirmation]" }

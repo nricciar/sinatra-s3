@@ -6,6 +6,10 @@ module S3
     def login_required
       @user = User.find(session[:user_id]) unless session[:user_id].nil?
       redirect '/control/login' if @user.nil?
+
+      if defined?(GoogleAuthenticator)
+        redirect '/control/key' if session[:google_auth].nil? && @user.google_auth_key
+      end
     end
 
     def number_to_human_size(size)
