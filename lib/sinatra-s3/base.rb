@@ -136,7 +136,7 @@ module S3
 	      x.Key c.name
 	      x.LastModified c.updated_at.getgm.iso8601
 	      x.ETag c.etag
-	      x.Size c.file_info.size
+	      x.Size c.obj.size
 	      x.StorageClass "STANDARD"
 	      x.Owner do
 		x.ID c.owner.key
@@ -229,8 +229,8 @@ module S3
 	h.merge!({ "x-amz-meta-#{k}" => v })
       }
 
-      h.merge!({ 'Content-Disposition' => (@slot.file_info.disposition.nil? ? "inline" : @slot.file_info.disposition), 'Content-Length' => (@revision_file.nil? ?
-	  @slot.file_info.size : @revision_file.length).to_s, 'Content-Type' => @slot.file_info.mime_type })
+      h.merge!({ 'Content-Disposition' => (@slot.obj.disposition.nil? ? "inline" : @slot.obj.disposition), 'Content-Length' => (@revision_file.nil? ?
+	  @slot.obj.size : @revision_file.length).to_s, 'Content-Type' => @slot.obj.mime_type })
 
       h['Content-Type'] ||= 'binary/octet-stream'
       h.merge!('ETag' => etag, 'Last-Modified' => @slot.updated_at.httpdate) if @revision_file.nil?
@@ -248,7 +248,7 @@ module S3
 	range_start = $1
 	range_end = $2
 	raise NotImplemented unless range_start || range_end # Need at least one or the other.
-	file_path = File.join(STORAGE_PATH, @slot.file_info.path)
+	file_path = File.join(STORAGE_PATH, @slot.obj.path)
 	file_size = File.size(file_path)
 	f = File.open(file_path)
 	if range_start # "Bytes N through ?" mode
@@ -267,8 +267,8 @@ module S3
       elsif env['HTTP_RANGE']  # ugh, parse ranges
 	raise NotImplemented
       else
-        body params.has_key?('version-id') ? @revision_file : open(File.join(STORAGE_PATH, @slot.file_info.path))
-        run_callback_for :mime_type => @slot.file_info.mime_type
+        body params.has_key?('version-id') ? @revision_file : open(File.join(STORAGE_PATH, @slot.obj.path))
+        run_callback_for :mime_type => @slot.obj.mime_type
       end
     end
 
@@ -319,10 +319,10 @@ module S3
 	only_can_read source_slot
 
 	unless env['HTTP_X_AMZ_COPY_SOURCE_IF_MATCH'].blank?
-	  raise PreconditionFailed if source_slot.file_info.etag != env['HTTP_X_AMZ_COPY_SOURCE_IF_MATCH']
+	  raise PreconditionFailed if source_slot.obj.etag != env['HTTP_X_AMZ_COPY_SOURCE_IF_MATCH']
 	end
 	unless env['HTTP_X_AMZ_COPY_SOURCE_IF_NONE_MATCH'].blank?
-	  raise PreconditionFailed if source_slot.file_info.etag == env['HTTP_X_AMZ_COPY_SOURCE_IF_NONE_MATCH']
+	  raise PreconditionFailed if source_slot.obj.etag == env['HTTP_X_AMZ_COPY_SOURCE_IF_NONE_MATCH']
 	end
 	unless env['HTTP_X_AMZ_COPY_SOURCE_IF_UNMODIFIED_SINCE'].blank?
 	  raise PreconditionFailed if Time.httpdate(env['HTTP_X_AMZ_COPY_SOURCE_IF_UNMODIFIED_SINCE']) > source_slot.updated_at
@@ -331,8 +331,8 @@ module S3
 	  raise PreconditionFailed if Time.httpdate(env['HTTP_X_AMZ_COPY_SOURCE_IF_MODIFIED_SINCE']) < source_slot.updated_at
 	end
 
-	temp_path = File.join(STORAGE_PATH, source_slot.file_info.path)
-	fileinfo = source_slot.file_info
+	temp_path = File.join(STORAGE_PATH, source_slot.obj.path)
+	fileinfo = source_slot.obj
 	fileinfo.path = File.join(params[:captures].first, rand(10000).to_s(36) + '_' + File.basename(temp_path))
 	fileinfo.path.succ! while File.exists?(File.join(STORAGE_PATH, fileinfo.path))
 	file_path = File.join(STORAGE_PATH,fileinfo.path)
@@ -388,15 +388,13 @@ module S3
 	  slot = nslot
 	end
 	if source_slot.nil?
-	  fileinfo.path = slot.file_info.path
+	  fileinfo.path = slot.obj.path
 	  file_path = File.join(STORAGE_PATH,fileinfo.path)
 	  FileUtils.mv(temp_path, file_path,{ :force => true })
 	else
 	  FileUtils.cp(temp_path, file_path)
 	end
-	slot.update_attributes(:owner_id => owner_id, :meta => meta,  :size => fileinfo.size)
-        slot.file_info.attributes = fileinfo.attributes
-
+	slot.update_attributes(:owner_id => owner_id, :meta => meta,  :obj => fileinfo, :size => fileinfo.size)
       rescue NoSuchKey
 	if source_slot.nil?
 	  fileinfo.path = File.join(params[:captures].first, rand(10000).to_s(36) + '_' + File.basename(temp_path))
@@ -407,8 +405,7 @@ module S3
 	else
 	  FileUtils.cp(temp_path, file_path)
 	end
-	slot = Slot.create(:name => params[:captures].last, :owner_id => owner_id, :meta => meta, :size => fileinfo.size)
-        slot.file_info = fileinfo
+	slot = Slot.create(:name => params[:captures].last, :owner_id => owner_id, :meta => meta, :obj => fileinfo, :size => fileinfo.size)
 	bucket.add_child(slot)
       end
       slot.grant(requested_acl(slot))
@@ -453,7 +450,7 @@ module S3
 	@slot = bucket.find_slot(params[:captures].last)
 	if @slot.versioning_enabled?
 	  begin
-	    @slot.git_repository.remove(File.basename(@slot.file_info.path))
+	    @slot.git_repository.remove(File.basename(@slot.obj.path))
 	    @slot.git_repository.commit("Removed #{@slot.name} from the Git repository.")
 	    @slot.git_update
 	  rescue Git::GitExecuteError => error_message

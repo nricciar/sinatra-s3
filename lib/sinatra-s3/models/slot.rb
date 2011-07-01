@@ -3,15 +3,15 @@ class Slot < Bit
   scope :bucket, lambda { |bucket| { :conditions => [ 'bits.deleted = 0 AND parent_id = ?', bucket.id ], :order => "name" } }
   scope :items, lambda { |marker,prefix| { :conditions => condition_string(marker,prefix) } }
 
-  def fullpath; File.join(S3::STORAGE_PATH, file_info.path) end
+  def fullpath; File.join(S3::STORAGE_PATH, obj.path) end
 
   def etag
-    if self.file_info.etag
-      self.file_info.etag
-    elsif self.file_info.md5
-      self.file_info.md5
+    if self.obj.etag
+      self.obj.etag
+    elsif self.obj.md5
+      self.obj.md5
     else
-      %{"#{Digest::MD5.md5(self.file_info)}"}
+      %{"#{Digest::MD5.md5(self.obj)}"}
     end
   end
 
@@ -22,8 +22,8 @@ class Slot < Bit
   def metainfo
     mii = RubyTorrent::MetaInfoInfo.new
     mii.name = self.name
-    mii.length = self.file_info.size
-    mii.md5sum = self.file_info.md5
+    mii.length = self.obj.size
+    mii.md5sum = self.obj.md5
     mii.piece_length = 512.kilobytes
     mii.pieces = ""
     i = 0

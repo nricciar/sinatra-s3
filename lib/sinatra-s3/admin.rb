@@ -146,12 +146,10 @@ module S3
           slot.update_attributes(:deleted => true)
           slot = nslot
         end
-        fileinfo.path = slot.fileinfo.path
+        fileinfo.path = slot.obj.path
         file_path = File.join(STORAGE_PATH,fileinfo.path)
 
-        slot.update_attributes(:owner_id => @user.id, :meta => mdata, :size => fileinfo.size)
-        slot.file_info.attributes = fileinfo.attributes
-
+        slot.update_attributes(:owner_id => @user.id, :meta => mdata, :obj => fileinfo, :size => fileinfo.size)
         FileUtils.mv(tmpf.path, file_path,{ :force => true })
       rescue NoSuchKey
         fileinfo.path = File.join(params[:bucket], rand(10000).to_s(36) + '_' + File.basename(tmpf.path))
@@ -160,8 +158,7 @@ module S3
         FileUtils.mkdir_p(File.dirname(file_path))
         FileUtils.mv(tmpf.path, file_path)
 
-        slot = Slot.create(:name => params['fname'], :owner_id => @user.id, :meta => mdata, :size => fileinfo.size)
-        slot.file_info = fileinfo
+        slot = Slot.create(:name => params['fname'], :owner_id => @user.id, :meta => mdata, :obj => fileinfo, :size => fileinfo.size)
         slot.grant(:access => params['facl'].to_i)
 
         @bucket.add_child(slot)
@@ -194,7 +191,7 @@ module S3
       @bucket = Bucket.find_root params[:captures].first
       @file = @bucket.find_slot(params[:captures].last)
       only_owner_of @bucket
-      @versions = @bucket.git_repository.log.path(File.basename(@file.file_info.path))
+      @versions = @bucket.git_repository.log.path(File.basename(@file.obj.path))
       r :changes, "Commit Log", :popup
     end
 
@@ -218,7 +215,7 @@ module S3
       @slot = @bucket.find_slot(params[:captures].last)
 
       if @slot.versioning_enabled?
-        @slot.git_repository.remove(File.basename(@slot.file_info.path))
+        @slot.git_repository.remove(File.basename(@slot.obj.path))
         @slot.git_repository.commit("Removed #{@slot.name} from the Git repository.")
         @slot.git_update
       end
