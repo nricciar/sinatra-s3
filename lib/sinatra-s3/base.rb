@@ -310,9 +310,10 @@ module S3
 	slot.grant(requested_acl(slot))
 	headers 'ETag' => slot.etag, 'Content-Length' => 0.to_s
 	body ""
-      elsif env['HTTP_X_AMZ_COPY_SOURCE'].to_s =~ /\/(.+?)\/(.+)/
+      elsif env['HTTP_X_AMZ_COPY_SOURCE'].to_s =~ /\/?(.+?)%2F(.+)/
 	source_bucket_name = $1
 	source_oid = $2
+        source_oid = source_oid.gsub("%2F","\/")
 
 	source_slot = Bucket.find_root(source_bucket_name).find_slot(source_oid)
 	@meta = source_slot.meta unless !env['HTTP_X_AMZ_METADATA_DIRECTIVE'].nil? && env['HTTP_X_AMZ_METADATA_DIRECTIVE'].upcase == "REPLACE"
@@ -333,6 +334,7 @@ module S3
 
 	temp_path = File.join(STORAGE_PATH, source_slot.obj.path)
 	fileinfo = source_slot.obj
+        fileinfo.etag='""' if params[:captures].last[-8,8] == '$folder$'
 	fileinfo.path = File.join(params[:captures].first, rand(10000).to_s(36) + '_' + File.basename(temp_path))
 	fileinfo.path.succ! while File.exists?(File.join(STORAGE_PATH, fileinfo.path))
 	file_path = File.join(STORAGE_PATH,fileinfo.path)
@@ -434,7 +436,7 @@ module S3
 	headers h
 	xml do |x|
 	  x.CopyObjectResult do
-	    x.LastModified slot.updated_at.httpdate
+	    x.LastModified slot.updated_at.xmlschema
 	    x.Etag slot.etag
 	  end
 	end
