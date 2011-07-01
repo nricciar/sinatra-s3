@@ -1,4 +1,3 @@
-require 'aws/s3'
 require "sinatra/reloader"
 
 module S3
@@ -51,7 +50,6 @@ module S3
         @user.errors.add(:login, 'not found')
       end
       r :login, "Login"
-#      login_view
     end
 
     get '/control/key' do
@@ -102,7 +100,7 @@ module S3
       login_required
       @bucket = Bucket.find_root(params[:bucket])
       only_can_read @bucket
-      @files = Slot.find :all, :conditions => ['deleted = 0 AND parent_id = ?', @bucket.id], :order => 'name'
+      @files = Slot.find :all, :conditions => ['deleted = 0 AND parent_id = ?', @bucket.id], :include => :torrent, :order => 'name'
       r :files, "/#{@bucket.name}"
     end
 

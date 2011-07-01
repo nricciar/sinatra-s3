@@ -27,7 +27,7 @@ spec = Gem::Specification.new do |s|
   s.has_rdoc = false
   s.extra_rdoc_files = ["README"]
   s.add_dependency("sinatra", ">= 1.0")
-  s.add_dependency("aws-s3", ">= 0.6.2")
+  s.add_development_dependency("aws-s3", ">= 0.6.2")
   s.add_dependency("haml", ">= 2.2.15")
 end
 
