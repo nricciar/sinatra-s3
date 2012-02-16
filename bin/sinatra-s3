@@ -55,7 +55,7 @@ unless $APP_PATH.blank?
   config_ru = "require 'rubygems'\nrequire 'sinatra-s3'"
   config_ru += "\n\nuse S3::Tracker if defined?(RubyTorrent)\nuse S3::Admin\nrun S3::Application"
   check_install("config.ru", config_ru)
-  check_install("Rakefile", "require 'sinatra-s3/tasks'")
+  check_install("Rakefile", "require 'rubygems'\nrequire 'sinatra-s3/tasks'")
   check_install("s3.yml", File.read(File.join(S3::ROOT_DIR,"s3.yml.example")))
 else
   puts "usage: sinatra-s3 install/path"

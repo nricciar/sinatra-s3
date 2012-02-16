@@ -1,6 +1,5 @@
 require 'rubygems'
 require 'active_record'
-require 'active_record/railtie'
 require 'active_support/core_ext' 
 
 require 'fileutils'
@@ -44,14 +43,12 @@ rescue LoadError
 end
 
 module S3
-  #S3_ENV = :production
-  S3_ENV = :development
+  S3_ENV = :production
 
   def self.config
     @config ||= YAML.load_file("s3.yml")[S3_ENV] rescue { :db => { :adapter => 'sqlite3', :database => "db/s3.db" } }
   end
 
-  VERSION = "0.99"
   DEFAULT_PASSWORD = 'pass@word1'
 
   BUFSIZE = (4 * 1024)
