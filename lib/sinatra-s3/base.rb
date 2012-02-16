@@ -1,13 +1,16 @@
-require "sinatra/reloader"
-
 module S3
 
   class Application < Sinatra::Base
 
     enable :static
-    disable :raise_errors, :show_exceptions
+    set :raise_errors, Proc.new { false }
+    set :show_exceptions, false
     set :environment, S3_ENV
-    set :public, PUBLIC_PATH
+    if Sinatra.const_defined?("VERSION") && Gem::Version.new(Sinatra::VERSION) >= Gem::Version.new("1.3.0")
+      set :public_folder, PUBLIC_PATH
+    else
+      set :public, PUBLIC_PATH
+    end
 
     helpers do
       include S3::Helpers
@@ -16,11 +19,6 @@ module S3
 
     configure do
       ActiveRecord::Base.establish_connection(S3.config[:db])
-    end
-
-    configure(:development) do
-      register Sinatra::Reloader
-      also_reload "./lib/**/*.rb"
     end
 
     before do
@@ -197,16 +195,16 @@ module S3
     end
 
     def slot_head
-      bucket = Bucket.find_root(params[:captures].first)
+      @bucket = Bucket.find_root(params[:captures].first)
 
       h = {}
       if params.has_key?('version-id')
-	@revision = bucket.git_repository.gcommit(params['version-id'])
+	@revision = @bucket.git_repository.gcommit(params['version-id'])
 	h.merge!({ 'x-amz-version-id' => @revision.sha })
 	@slot = Slot.find_by_version(@revision.sha)
 	@revision_file = @revision.gtree.blobs[File.basename(@slot.fullpath)].contents { |f| f.read }
       else
-	@slot = bucket.find_slot(params[:captures].last)
+	@slot = @bucket.find_slot(params[:captures].last)
 	git_object = @slot.git_object
 	h.merge!({ 'x-amz-version-id' => git_object.objectish }) if git_object
       end

@@ -16,6 +16,9 @@ module S3
       include S3::TrackerHelper
     end
 
+    set :raise_errors, Proc.new { false }
+    set :show_exceptions, false
+
     configure do
       ActiveRecord::Base.establish_connection(S3.config[:db])
     end

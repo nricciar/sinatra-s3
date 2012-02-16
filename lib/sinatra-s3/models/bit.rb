@@ -20,6 +20,8 @@ class Bit < ActiveRecord::Base
 
   def git_repository_path
     self.obj ? File.join(File.dirname(self.fullpath)) : self.fullpath
+  rescue
+    self.fullpath
   end
 
   def versioning_enabled?

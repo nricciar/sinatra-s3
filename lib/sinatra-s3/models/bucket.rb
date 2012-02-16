@@ -8,7 +8,7 @@ class Bucket < Bit
   end
 
   def self.find_root(bucket_name)
-    root(bucket_name).find(:first) or raise S3::NoSuchBucket
+    self.find(:first, :conditions => ['deleted = 0 AND parent_id IS NULL AND name = ?', bucket_name]) or raise S3::NoSuchBucket
   end
 
   def find_slot(oid)
