@@ -1,5 +1,3 @@
-require "sinatra/reloader"
-
 module S3
 
   class Admin < Sinatra::Base
@@ -9,14 +7,11 @@ module S3
       include S3::AdminHelpers
     end
 
+    set :raise_errors, Proc.new { false }
+    set :show_exceptions, false
     set :sessions, :on
     set :environment, S3_ENV
     set :views, File.join(File.dirname(__FILE__), 'views')
-
-    configure(:development) do
-      register Sinatra::Reloader
-      also_reload "./lib/**/*.rb"
-    end
 
     before do
       ActiveRecord::Base.verify_active_connections!
@@ -368,8 +363,10 @@ module S3
       only_can_write @slot
 
       newm = {}
-      params[:m].each do |k,v|
-        newm[k] = v unless v.blank?
+      unless params[:m].nil?
+        params[:m].each do |k,v|
+          newm[k] = v unless v.blank?
+        end
       end
       if !params[:meta]['key'].blank? && !params[:meta]['value'].blank?
         if params[:meta]['key'] =~ /^[A-Za-z0-9\-]+$/
