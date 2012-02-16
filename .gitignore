@@ -3,3 +3,4 @@ s3.yml
 config/unicorn.rb
 storage/*
 db/*.db
+/Gemfile.lock

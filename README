@@ -14,7 +14,7 @@ To install or upgrade Sinatra-S3
 
 Or we could install from github (bleeding edge, may not work)
 
-  sudo gem install sinatra builder aws-s3
+  sudo gem install sinatra builder
   git clone git://github.com/nricciar/sinatra-s3.git
   cd sinatra-s3/
   cp s3.yml.example s3.yml
