@@ -79,14 +79,16 @@ module S3
     post '/control/buckets/?' do
       login_required
       begin
-        Bucket.find_root(params['bucket']['name'])
+        @bucket = Bucket.find_root(params['bucket']['name'])
         load_buckets
-        @bucket.errors.add_to_base("A bucket named `#{@input['bucket']['name']}' already exists.")
+        @bucket.errors.add(:name, "bucket already exists.")
       rescue NoSuchBucket
-         bucket = Bucket.new(params['bucket'])
-         redirect '/control/buckets' if bucket.save()
+         @bucket = Bucket.new(params['bucket'])
+         unless S3::Application.reserved_words.include?(@bucket.name)
+           redirect '/control/buckets' if @bucket.save()
+         end
          load_buckets
-         @bucket.errors.add_to_base("Invalid bucket name.")
+         @bucket.errors.add(:name, "bucket name is invalid.")
       end
       r :buckets, "Buckets"
     end

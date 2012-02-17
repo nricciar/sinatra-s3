@@ -169,6 +169,10 @@ module S3
 	headers 'Location' => env['PATH_INFO'], 'Content-Length' => 0.to_s
 	body ""
       rescue NoSuchBucket
+        # do not allow the creation of buckets that match a
+        # list of reserved words
+        raise AccessDenied if S3::Application.reserved_words.include?(params[:captures].first)
+
 	Bucket.create(:name => params[:captures].first, :owner_id => @user.id).grant(requested_acl)
 	headers 'Location' => env['PATH_INFO'], 'Content-Length' => 0.to_s
 	body ""
@@ -485,17 +489,28 @@ module S3
       run_callback_for :error => request.env['sinatra.error'].code
     end
 
-    def self.callback(args = {}, &block)
-      @@callbacks ||= {}
-      if args[:mime_type]
-        @@callbacks[:mime_type] ||= {}
-        @@callbacks[:mime_type][args[:mime_type]] = block
-      elsif args[:error]
-        @@callbacks[:error] ||= {}
-        @@callbacks[:error][args[:error]] = block
-      elsif args[:when]
-	@@callbacks[:when] ||= {}
-	@@callbacks[:when][args[:when]] = block
+    class << self
+      # list of words that cannot be used as bucket names
+      def reserved_words
+        @@reserved_words ||= ['control']
+      end
+
+      def reserved_words=(val)
+        @@reserved_words = val
+      end
+
+      def callback(args = {}, &block)
+        @@callbacks ||= {}
+        if args[:mime_type]
+          @@callbacks[:mime_type] ||= {}
+          @@callbacks[:mime_type][args[:mime_type]] = block
+        elsif args[:error]
+          @@callbacks[:error] ||= {}
+          @@callbacks[:error][args[:error]] = block
+        elsif args[:when]
+  	  @@callbacks[:when] ||= {}
+	  @@callbacks[:when][args[:when]] = block
+        end
       end
     end
 

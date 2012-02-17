@@ -33,8 +33,8 @@ module S3
       ret = ""
       if model.errors.size > 0
 	ret += "<ul class=\"errors\">"
-	model.errors.each_full do |error|
-	  ret += "<li>#{error}</li>"
+	model.errors.each do |attr,ea|
+	  ea.each { |error| ret += "<li>#{error}</li>" }
 	end
 	ret += "</ul>"
       end
